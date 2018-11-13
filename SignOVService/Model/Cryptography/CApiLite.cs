@@ -5,7 +5,7 @@ namespace SignOVService.Model.Cryptography
 {
 	internal class CApiLite
 	{
-		const string LIBCAPI20 = "crypt32.dll"; //"libcapi20.so";
+		const string LIBCAPI20 = /*"crypt32.dll";*/ "/opt/cprocsp/lib/amd64/libcapi20.so";
 
 		internal struct CRYPT_SIGN_MESSAGE_PARA
 		{

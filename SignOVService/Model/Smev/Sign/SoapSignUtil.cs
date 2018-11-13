@@ -1,4 +1,5 @@
-﻿using SignOVService.Model.Smev.Sign.SoapSigners;
+﻿using Microsoft.Extensions.Logging;
+using SignOVService.Model.Smev.Sign.SoapSigners;
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -9,15 +10,18 @@ namespace SignOVService.Model.Smev.Sign
 	{
 		// Объект, через который происходит подписание
 		private ISoapSigner signerTool;
+		private readonly ILogger<SoapSignUtil> log;
 
 		// По умолчанию подписыванием тело XML содержимого
 		public SignedTag ElemForSign = SignedTag.Body;
 		public bool SignWithId = false;
 
-		public SoapSignUtil(X509Certificate2 certificate, MR mr)
+		public SoapSignUtil(ILoggerFactory loggerFactory, X509Certificate2 certificate, MR mr)
 		{
 			MrVersion = mr;
 			Certificate = certificate;
+
+			this.log = loggerFactory.CreateLogger<SoapSignUtil>();
 
 			switch (MrVersion)
 			{
@@ -28,10 +32,16 @@ namespace SignOVService.Model.Smev.Sign
 					//signerTool = new SoapSignUtil2XX(mr);
 					break;
 				case MR.MR300:
+				{
+					log.LogDebug("Версия МР соответствует MR300, создаем клиент реализующий подписание запросов для данной версии.");
 					signerTool = new SoapSignUtil3XX(mr);
 					break;
+				}
 				default:
+				{
+					log.LogError("Неподдерживаемая версия методических рекомендаций.");
 					throw new NotImplementedException("Неподдерживаемая версия методических рекомендаций.");
+				}
 			}
 		}
 
