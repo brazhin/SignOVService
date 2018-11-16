@@ -3,11 +3,15 @@ using SignOVService.Model.Cryptography;
 using SignOVService.Model.Smev.Sign;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
+using static SignOVService.Model.Cryptography.CApiLite;
 
 namespace SignOVService.Model
 {
@@ -76,95 +80,25 @@ namespace SignOVService.Model
 			return signXml;
 		}
 
-		/// <summary>
-		/// Метод поиска сертификата в хранилище по указанному отпечатку
-		/// </summary>
-		/// <param name="thumbprint"></param>
-		/// <returns></returns>
-		X509Certificate2 FindCertificate(string thumbprint)
-		{
-			log.LogDebug($"Пытаемся получить сертификат из хранилища по отпечатку: {thumbprint}.");
-			log.LogDebug($"Тип хранилища: My. Локация: {certificateLocation}.");
-
-			List<X509Store> stores = new List<X509Store>()
-			{
-				//My
-				new X509Store(StoreName.My, StoreLocation.CurrentUser),
-				new X509Store(StoreName.My, StoreLocation.LocalMachine),
-				//AddressBook
-				new X509Store(StoreName.AddressBook, StoreLocation.CurrentUser),
-				new X509Store(StoreName.AddressBook, StoreLocation.LocalMachine),
-				//AuthRoot
-				new X509Store(StoreName.AuthRoot, StoreLocation.CurrentUser),
-				new X509Store(StoreName.AuthRoot, StoreLocation.LocalMachine),
-				//CertificateAuthority
-				new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser),
-				new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine),
-				//Disallowed
-				new X509Store(StoreName.Disallowed, StoreLocation.CurrentUser),
-				new X509Store(StoreName.Disallowed, StoreLocation.LocalMachine),
-				//Root
-				new X509Store(StoreName.Root, StoreLocation.CurrentUser),
-				new X509Store(StoreName.Root, StoreLocation.LocalMachine),
-				//TrustedPeople
-				new X509Store(StoreName.TrustedPeople, StoreLocation.CurrentUser),
-				new X509Store(StoreName.TrustedPeople, StoreLocation.LocalMachine),
-				//TrustedPublisher
-				new X509Store(StoreName.TrustedPublisher, StoreLocation.CurrentUser),
-				new X509Store(StoreName.TrustedPublisher, StoreLocation.LocalMachine)
-			};
-
-			List<X509Store> certStores = new List<X509Store>();
-
-			foreach (var item in stores)
-			{
-				if(item.Certificates.Count > 0)
-				{
-					certStores.Add(item);
-				}
-			}
-
-			FIND_TEST(thumbprint, StoreLocation.CurrentUser, StoreName.My, X509FindType.FindByThumbprint);
-
-			using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-			{
-				log.LogDebug("Открываем хранилище сертификатов.");
-
-				store.Open(OpenFlags.ReadOnly);
-
-				log.LogDebug("Ищем сертификат по заданному отпечатку.");
-
-				var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
-
-				log.LogDebug("Закрываем хранилище сертификатов.");
-
-				// Если сертификат найден вернем его из метода
-				return (certs.Count > 0) ? certs[0] : null;
-			}
-		}
-
 		/**<summary>Поиск сертификата (первого удовлетворяющего критериям поиска)</summary>
-		* <param name="findType">Тип поиска</param>
-		* <param name="findValue">Значение поиска (отпечаток либо серийный номер)</param>
-		* <param name="storeLocation">Место </param>
-		* <param name="storeName">Имя хранилища</param>
+		* <param name="findValue">Значение поиска (отпечаток)</param>
 		* <returns>Сертификат</returns>
 		* **/
-		public X509Certificate2 FIND_TEST(string findValue, StoreLocation storeLocation, StoreName storeName, X509FindType findType)
+		public X509Certificate2 FindCertificate(string findValue)
 		{
 			IntPtr handleCert = IntPtr.Zero;
-			GCHandle handleFull = new GCHandle();
 			IntPtr handleSysStore = IntPtr.Zero;
+			IntPtr duplicateContext = IntPtr.Zero;
 
 			try
 			{
 				//// Открываем хранилище сертификатов
 				handleSysStore = CApiLite.CertOpenStore(
-					new IntPtr(2),
+					UCConst.CERT_STORE_PROV_SYSTEM,
 					0,
 					IntPtr.Zero,
-					0x4000 | 65536, //CERT_SYSTEM_STORE_CURRENT_USER - 65536
-					"My"
+					65536, //CurrentUser
+					"MY"
 				);
 
 				if (handleSysStore == IntPtr.Zero)
@@ -172,41 +106,66 @@ namespace SignOVService.Model
 					throw new Exception("Ошибка при попытке получить дескриптор открытого хранилища сертификатов.");
 				}
 
-				var arData = (fIsLinux) ? Encoding.UTF8.GetBytes(findValue) : Encoding.Unicode.GetBytes(findValue);
-				handleFull = GCHandle.Alloc(arData, GCHandleType.Pinned);
+				var sha1hash = StringToByteArray(findValue);
 
-				IntPtr handlePrev = IntPtr.Zero;
+				CRYPT_HASH_BLOB hashb = new CRYPT_HASH_BLOB();
+				hashb.pbData = Marshal.AllocHGlobal(sha1hash.Length);
+				Marshal.Copy(sha1hash, 0, hashb.pbData, sha1hash.Length);
+				hashb.cbData = sha1hash.Length;
 
-				// Ищем сертификат в хранилище
 				handleCert = CApiLite.CertFindCertificateInStore(
-					handleSysStore,             // Дескриптор хранилища, в котором будет осуществлен поиск.
-					0,                                                  // Тип зашифрования. В этом поиске не используется.
-					0,                                                  // dwFindFlags. Специальный критерий поиска.
-					UCConst.CERT_FIND_ANY,                              // Тип поиска. Задает вид поиска, который будет
-																		/*handleFull.AddrOfPinnedObject()*/IntPtr.Zero,     // pvFindPara. Выдает определенное значение поиска
-					handlePrev                                          // pCertContext равен NULL == IntPtr.Zero для первого вызова
+					handleSysStore,
+					UCConst.PKCS_7_OR_X509_ASN_ENCODING,
+					0,
+					UCConst.CERT_FIND_SHA1_HASH,
+					ref hashb,
+					IntPtr.Zero
 				);
 
-				// Освобождаем предыдущий TODO: для циклического обхода
-				if (handlePrev != IntPtr.Zero) CApiLite.CertFreeCertificateContext(handlePrev);
-				handleFull.Free();
+				if(handleCert == IntPtr.Zero)
+				{
+					throw new Exception("Ошибка при попытке получить дескриптор сертификата.");
+				}
 
-				return (fIsLinux) ? new X509Certificate2(new X509Certificate(handleCert)) : new X509Certificate2(handleCert);
+				CERT_CONTEXT contextCert = (CERT_CONTEXT)Marshal.PtrToStructure(handleCert, typeof(CERT_CONTEXT));
+
+				if (IsLinux)
+				{
+					byte[] certBin = new byte[contextCert.cbCertEncoded];
+					Marshal.Copy(contextCert.pbCertEncoded, certBin, 0, certBin.Length);
+
+					return new X509Certificate2(certBin);
+				}
+
+				return new X509Certificate2(handleCert);
 			}
 			catch (Exception ex)
 			{
 				throw new Exception("Неопределенная ошибка при попытке найти сертификат в хранилище. " + ex.Message);
 			}
+			finally
+			{
+				CertCloseStore(handleSysStore, 0);
+				CertFreeCertificateContext(handleSysStore);
+			}
 		}
 
-		//TODO: delete
-		public static bool fIsLinux
+		public static bool IsLinux
 		{
 			get
 			{
 				int iPlatform = (int)Environment.OSVersion.Platform;
 				return (iPlatform == 4) || (iPlatform == 6) || (iPlatform == 128);
 			}
+		}
+
+		private static byte[] StringToByteArray(String hex)
+		{
+			int NumberChars = hex.Length;
+			byte[] bytes = new byte[NumberChars / 2];
+			for (int i = 0; i < NumberChars; i += 2)
+				bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+			return bytes;
 		}
 	}
 }
