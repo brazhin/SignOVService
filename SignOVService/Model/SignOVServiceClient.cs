@@ -83,16 +83,18 @@ namespace SignOVService.Model
 		/**<summary>Поиск сертификата (первого удовлетворяющего критериям поиска)</summary>
 		* <param name="findValue">Значение поиска (отпечаток)</param>
 		* <returns>Сертификат</returns>
-		* **/
+		* TODO: добавить логи в метод
+		*/
 		public X509Certificate2 FindCertificate(string findValue)
 		{
+			// Дескриптор сертификата (по умолчанию 0)
 			IntPtr handleCert = IntPtr.Zero;
+			// Дескриптор системного хранилища сертификатов (по умолчанию 0)
 			IntPtr handleSysStore = IntPtr.Zero;
-			IntPtr duplicateContext = IntPtr.Zero;
 
 			try
 			{
-				//// Открываем хранилище сертификатов
+				// Открываем хранилище сертификатов
 				handleSysStore = CApiLite.CertOpenStore(
 					UCConst.CERT_STORE_PROV_SYSTEM,
 					0,
@@ -103,16 +105,21 @@ namespace SignOVService.Model
 
 				if (handleSysStore == IntPtr.Zero)
 				{
-					throw new Exception("Ошибка при попытке получить дескриптор открытого хранилища сертификатов.");
+					log.LogError("Ошибка при попытке открыть хранилище сертификатов. Не удалось получить дескриптор открытого хранилища.");
+					throw new Exception("Ошибка при попытке открыть хранилище сертификатов. Не удалось получить дескриптор открытого хранилища.");
 				}
 
+				// Получаем значение thumbprint в бинарном виде
 				var sha1hash = StringToByteArray(findValue);
 
+				// Формируем объект CRYPT_HASH_BLOB в памяти. 
+				// Данный объект несет информацию об thumbprint для поиска по флагу CERT_FIND_SHA1_HASH (поиск по отпечатку)
 				CRYPT_HASH_BLOB hashb = new CRYPT_HASH_BLOB();
 				hashb.pbData = Marshal.AllocHGlobal(sha1hash.Length);
 				Marshal.Copy(sha1hash, 0, hashb.pbData, sha1hash.Length);
 				hashb.cbData = sha1hash.Length;
 
+				// Ищем сертификат в хранилище
 				handleCert = CApiLite.CertFindCertificateInStore(
 					handleSysStore,
 					UCConst.PKCS_7_OR_X509_ASN_ENCODING,
@@ -124,11 +131,15 @@ namespace SignOVService.Model
 
 				if(handleCert == IntPtr.Zero)
 				{
-					throw new Exception("Ошибка при попытке получить дескриптор сертификата.");
+					log.LogError($"Сертификат со значением thumbprint = {findValue} не найден в хранилище сертификатов.");
+					throw new Exception($"Сертификат со значением thumbprint = {findValue} не найден в хранилище сертификатов.");
 				}
 
+				// Получаем контекст сертификата для дальнейшего преобразования к объекту X509Certificate2
 				CERT_CONTEXT contextCert = (CERT_CONTEXT)Marshal.PtrToStructure(handleCert, typeof(CERT_CONTEXT));
 
+				// Если в Linux получаем объект X509Certificate2 из contextCert.pbCertEncoded
+				// иначе создаем на основе дескриптора
 				if (IsLinux)
 				{
 					byte[] certBin = new byte[contextCert.cbCertEncoded];
@@ -141,16 +152,20 @@ namespace SignOVService.Model
 			}
 			catch (Exception ex)
 			{
+				log.LogError("Неопределенная ошибка при попытке найти сертификат в хранилище. " + ex.Message);
 				throw new Exception("Неопределенная ошибка при попытке найти сертификат в хранилище. " + ex.Message);
 			}
 			finally
 			{
 				CertCloseStore(handleSysStore, 0);
-				CertFreeCertificateContext(handleSysStore);
+				CertFreeCertificateContext(handleCert);
 			}
 		}
 
-		public static bool IsLinux
+		/// <summary>
+		/// Свойство для определения ОС на которой развернут сервис
+		/// </summary>
+		private bool IsLinux
 		{
 			get
 			{
@@ -159,12 +174,22 @@ namespace SignOVService.Model
 			}
 		}
 
-		private static byte[] StringToByteArray(String hex)
+		/// <summary>
+		/// Метод преобразования hex строки в массив байт,
+		/// Необходим для правильного преобразования в байта значения thumbprint сертификата
+		/// </summary>
+		/// <param name="hex"></param>
+		/// <returns></returns>
+		private byte[] StringToByteArray(string hex)
 		{
 			int NumberChars = hex.Length;
 			byte[] bytes = new byte[NumberChars / 2];
+
 			for (int i = 0; i < NumberChars; i += 2)
+			{
 				bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+			}
+
 			return bytes;
 		}
 	}
