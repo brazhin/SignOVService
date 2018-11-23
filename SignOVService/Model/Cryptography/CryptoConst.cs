@@ -1,9 +1,39 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace SignOVService.Model.Cryptography
 {
-	public class UCConst
+	internal class CryptoConst
 	{
+		internal const uint AT_KEYEXCHANGE = 1;
+		internal const uint AT_SIGNATURE = 2;
+
+		internal const uint CERT_KEY_PROV_INFO_PROP_ID = 2;
+		internal const uint CERT_KEY_CONTEXT_PROP_ID = 5;
+
+		/* CRYPT_HASH_ALG_OID_GROUP_ID */
+		internal const string szOID_CP_GOST_R3411 = "1.2.643.2.2.9";
+		internal const string szOID_CP_GOST_R3411_12_256 = "1.2.643.7.1.1.2.2";
+		internal const string szOID_CP_GOST_R3411_12_512 = "1.2.643.7.1.1.2.3";
+
+		/* CRYPT_PUBKEY_ALG_OID_GROUP_ID */
+		internal const string szOID_CP_GOST_R3410 = "1.2.643.2.2.20";
+		internal const string szOID_CP_GOST_R3410EL = "1.2.643.2.2.19";
+		internal const string szOID_CP_GOST_R3410_12_256 = "1.2.643.7.1.1.1.1";
+		internal const string szOID_CP_GOST_R3410_12_512 = "1.2.643.7.1.1.1.2";
+		internal const string szOID_CP_DH_EX = "1.2.643.2.2.99";
+		internal const string szOID_CP_DH_EL = "1.2.643.2.2.98";
+		internal const string szOID_CP_DH_12_256 = "1.2.643.7.1.1.6.1";
+		internal const string szOID_CP_DH_12_512 = "1.2.643.7.1.1.6.2";
+		internal const string szOID_CP_GOST_R3410_94_ESDH = "1.2.643.2.2.97";
+		internal const string szOID_CP_GOST_R3410_01_ESDH = "1.2.643.2.2.96";
+
+		/* CRYPT_SIGN_ALG_OID_GROUP_ID */
+		internal const string szOID_CP_GOST_R3411_R3410 = "1.2.643.2.2.4";
+		internal const string szOID_CP_GOST_R3411_R3410EL = "1.2.643.2.2.3";
+		internal const string szOID_CP_GOST_R3411_12_256_R3410 = "1.2.643.7.1.1.3.2";
+		internal const string szOID_CP_GOST_R3411_12_512_R3410 = "1.2.643.7.1.1.3.3";
+
 		/// <summary>
 		// Создает хранилище сертификатов в кэшированной памяти.
 		// В хранилище изначально не загружаются сертификаты, списки отзыва сертификатов (CRL) или списки доверия сертификатов (CTL).
@@ -97,4 +127,113 @@ namespace SignOVService.Model.Cryptography
 		public int cbData;
 		public IntPtr pbData;
 	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct CRYPT_HASH_BLOB
+	{
+		public int cbData;
+		public IntPtr pbData;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct CRYPT_DATA_BLOB
+	{
+		public int cbData;
+		public IntPtr pbData;
+	}
+
+	internal struct CRYPT_SIGN_MESSAGE_PARA
+	{
+		internal uint cbSize;
+		internal uint dwMsgEncodingType;
+		internal IntPtr pSigningCert;
+		internal CRYPT_ALGORITHM_IDENTIFIER HashAlgorithm;
+		internal IntPtr pvHashAuxInfo;
+		internal uint cMsgCert;
+		internal IntPtr rgpMsgCert;
+		internal uint cMsgCrl;
+		internal IntPtr rgpMsgCrl;
+		internal uint cAuthAttr;
+		internal IntPtr rgAuthAttr;
+		internal uint cUnauthAttr;
+		internal IntPtr rgUnauthAttr;
+		internal uint dwFlags;
+		internal uint dwInnerContentType;
+		internal IntPtr HashEncryptionAlgorithm;
+		internal IntPtr pvHashEncryptionAuxInfo;
+	}
+
+	internal struct CRYPT_ALGORITHM_IDENTIFIER
+	{
+		internal string pszObjId;
+		internal CRYPT_OBJID_BLOB Parameters;
+	}
+
+	internal struct CRYPT_OBJID_BLOB
+	{
+		internal uint cbData;
+		internal IntPtr pbData;
+	}
+
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+	public struct CERT_CONTEXT
+	{
+		internal uint dwCertEncodingType;
+		internal IntPtr pbCertEncoded;
+		internal uint cbCertEncoded;
+		internal IntPtr pCertInfo;
+		internal IntPtr hCertStore;
+	}
+
+	internal struct CERT_INFO
+	{
+		internal uint dwVersion;
+		internal CRYPTOAPI_BLOB SerialNumber;
+		internal CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
+		internal CRYPTOAPI_BLOB Issuer;
+		internal System.Runtime.InteropServices.ComTypes.FILETIME NotBefore;
+		internal System.Runtime.InteropServices.ComTypes.FILETIME NotAfter;
+		internal CRYPTOAPI_BLOB Subject;
+		internal CERT_PUBLIC_KEY_INFO SubjectPublicKeyInfo;
+		internal CRYPT_BIT_BLOB IssuerUniqueId;
+		internal CRYPT_BIT_BLOB SubjectUniqueId;
+		internal uint cExtension;
+		internal IntPtr rgExtension;
+	}
+
+	internal struct CERT_PUBLIC_KEY_INFO
+	{
+		internal CRYPT_ALGORITHM_IDENTIFIER Algorithm;
+		internal CRYPT_BIT_BLOB PublicKey;
+	}
+
+	internal struct CRYPT_BIT_BLOB
+	{
+		internal uint cbData;
+		internal IntPtr pbData;
+		internal uint cUnusedBits;
+	}
+
+	internal struct CRYPT_KEY_PROV_INFO
+	{
+		[MarshalAs(UnmanagedType.LPStr)]
+		internal string pwszContainerName;
+
+		[MarshalAs(UnmanagedType.LPStr)]
+		internal string pwszProvName;
+
+		internal uint dwProvType;
+		internal uint dwFlags;
+		internal uint cProvParam;
+		internal CRYPT_KEY_PROV_PARAM rgProvParam;
+		internal uint dwKeySpec;
+	};
+
+	internal struct CRYPT_KEY_PROV_PARAM
+	{
+		internal uint dwParam;
+		internal IntPtr pbData;
+		internal uint cbData;
+		internal uint dwFlags;
+	};
 }
