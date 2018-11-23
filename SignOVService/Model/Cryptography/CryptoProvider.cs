@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SignOVService.Model.Cryptography
 {
@@ -24,6 +26,11 @@ namespace SignOVService.Model.Cryptography
 				int iPlatform = (int)Environment.OSVersion.Platform;
 				return (iPlatform == 4) || (iPlatform == 6) || (iPlatform == 128);
 			}
+		}
+
+		internal static IntPtr TryGetGostProvider()
+		{
+			throw new NotImplementedException();
 		}
 
 		/// <summary>
@@ -211,26 +218,26 @@ namespace SignOVService.Model.Cryptography
 		/// </summary>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		//public X509Certificate2Custom FindX509Certificate2(string thumbprint)
-		//{
-		//	IntPtr hCert = this.FindCertificate(thumbprint);
+		public X509Certificate2 FindX509Certificate2(string thumbprint)
+		{
+			IntPtr hCert = FindCertificate(thumbprint);
 
-		//	CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(hCert);
-		//	X509Certificate2Custom xCert = null;
+			CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(hCert);
+			X509Certificate2 xCert = null;
 
-		//	if (IsLinux)
-		//	{
-		//		byte[] ctx = new byte[contextCert.cbCertEncoded];
-		//		Marshal.Copy(contextCert.pbCertEncoded, ctx, 0, ctx.Length);
-		//		xCert = new X509Certificate2Custom(ctx, hCert);
-		//	}
-		//	else
-		//	{
-		//		xCert = new X509Certificate2Custom(hCert);
-		//	}
+			if (IsLinux)
+			{
+				byte[] ctx = new byte[contextCert.cbCertEncoded];
+				Marshal.Copy(contextCert.pbCertEncoded, ctx, 0, ctx.Length);
+				xCert = new X509Certificate2(ctx);
+			}
+			else
+			{
+				xCert = new X509Certificate2(hCert);
+			}
 
-		//	return xCert;
-		//}
+			return xCert;
+		}
 
 		/// <summary>
 		/// Метод освобождения контекста сертификата
@@ -239,6 +246,82 @@ namespace SignOVService.Model.Cryptography
 		public void FreeCertificateContext(IntPtr hCert)
 		{
 			CApiLite.CertFreeCertificateContext(hCert);
+		}
+
+		[SecurityCritical]
+		public static void CreateHash(IntPtr hProv, int algid, ref IntPtr hHash)
+		{
+			if (!CApiLite.CryptCreateHash(hProv, (uint)algid, IntPtr.Zero, (uint)0, ref hHash))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+		}
+
+		[SecurityCritical]
+		public static unsafe void HashData(IntPtr hHash, byte[] data, int idStart, int cbSize)
+		{
+			byte* numPointer;
+			byte[] numArray = data;
+			byte[] numArray1 = numArray;
+
+			if (numArray == null || (int)numArray1.Length == 0)
+			{
+				throw new ArgumentNullException("numArray");
+			}
+
+			if (cbSize == 0)
+			{
+				throw new ArgumentException("cbSize == 0", "cbSize");
+			}
+
+			if (hHash == null || hHash == IntPtr.Zero)
+			{
+				throw new ArgumentNullException("hHash");
+			}
+
+			if (numArray == null || (int)numArray1.Length == 0)
+			{
+				numPointer = null;
+
+				//TODO:
+				//if (!CApiLite.CryptHashData(hHash, numPointer + idStart, (uint)cbSize, 0))
+				//{
+				//	throw new CryptographicException(Marshal.GetLastWin32Error());
+				//}
+			}
+			else
+			{
+				fixed (byte* numPointer2 = numArray1)
+				{
+
+					//if (!CApiLite.CryptHashData(hHash, numPointer2 + idStart, (uint)cbSize, 0))
+					//{
+					//	throw new CryptographicException(Marshal.GetLastWin32Error());
+					//}
+				}
+			}
+
+			numPointer = null;
+		}
+
+		[SecurityCritical]
+		internal static byte[] EndHash(IntPtr hHash)
+		{
+			uint num = 0;
+
+			if (!CApiLite.CryptGetHashParam(hHash, 2, null, ref num, 0))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			byte[] numArray = new byte[num];
+
+			if (!CApiLite.CryptGetHashParam(hHash, 2, numArray, ref num, 0))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			return numArray;
 		}
 
 		/// <summary>

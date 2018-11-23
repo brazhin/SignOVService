@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace SignOVService.Model.Cryptography
 {
@@ -93,6 +94,21 @@ namespace SignOVService.Model.Cryptography
 
 		[DllImport(LIBCAPI20, CharSet = CharSet.Auto, ExactSpelling = false, SetLastError = true)]
 		internal static extern IntPtr CertDuplicateCertificateContext([In] IntPtr pCertContext);
+
+		[DllImport(LIBCAPI20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern unsafe bool CryptHashData([In] IntPtr hHash, byte[] pbData, [In] uint dwDataLen, [In] uint dwFlags);
+
+		[DllImport(LIBCAPI20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptCreateHash([In] IntPtr hProv, [In] uint Algid, [In] IntPtr hKey, [In] uint dwFlags, [In][Out] ref IntPtr phHash);
+
+		[DllImport(LIBCAPI20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptGetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, ref uint pdwDataLen, [In] uint dwFlags);
 
 		//[DllImport(LIBCAPI20, CharSet = CharSet.Auto, ExactSpelling = false, SetLastError = true)]
 		//internal static extern bool CertSetCertificateContextProperty(
