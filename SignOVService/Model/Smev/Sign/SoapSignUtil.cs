@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using SignOVService.Model.Cryptography;
 using SignOVService.Model.Smev.Sign.SoapSigners;
 using System;
 using System.Security.Cryptography.X509Certificates;
@@ -16,7 +17,7 @@ namespace SignOVService.Model.Smev.Sign
 		public SignedTag ElemForSign = SignedTag.Body;
 		public bool SignWithId = false;
 
-		public SoapSignUtil(ILoggerFactory loggerFactory, X509Certificate2 certificate, MR mr)
+		public SoapSignUtil(ILoggerFactory loggerFactory, /*X509Certificate2*/X509Certificate2Custom certificate, MR mr)
 		{
 			MrVersion = mr;
 			Certificate = certificate;
@@ -46,7 +47,7 @@ namespace SignOVService.Model.Smev.Sign
 		}
 
 		public MR MrVersion { get; }
-		public X509Certificate2 Certificate { get; private set; }
+		public /*X509Certificate2*/X509Certificate2Custom Certificate { get; private set; }
 
 		/// <summary>
 		/// Метод запускает подписание запроса для определенной версии МР, установленной в конструкторе

@@ -63,7 +63,7 @@ namespace SignOVService.Model.Smev.Sign.Gosts
 		/// <param name="idStart"></param>
 		/// <param name="cbSize"></param>
 		[SecuritySafeCritical]
-		protected override unsafe void HashCore(byte[] rgb, int idStart, int cbSize)
+		protected override void HashCore(byte[] rgb, int idStart, int cbSize)
 		{
 			if (rgb != null && rgb.Length > 0 && cbSize > 0)
 			{

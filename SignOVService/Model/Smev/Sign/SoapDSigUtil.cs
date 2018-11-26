@@ -3,8 +3,17 @@ using System.Xml;
 
 namespace SignOVService.Model.Smev.Sign
 {
+	/// <summary>
+	/// 
+	/// </summary>
 	public class SoapDSigUtil
 	{
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="elem"></param>
+		/// <param name="namespaceURI"></param>
+		/// <returns></returns>
 		public static string FindPrefix(XmlElement elem, string namespaceURI)
 		{
 			string result = string.Empty;
@@ -45,11 +54,20 @@ namespace SignOVService.Model.Smev.Sign
 			return result;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="xmlDocument"></param>
+		/// <returns></returns>
 		public static string RemoveActor(XmlDocument xmlDocument)
 		{
 			return "";
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="xmlDocument"></param>
 		public static void AddActor(XmlDocument xmlDocument)
 		{
 		}

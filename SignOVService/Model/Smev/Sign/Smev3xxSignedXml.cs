@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SignOVService.Model.Cryptography;
+using SignOVService.Model.Smev.Sign.Gosts;
+using System;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -22,7 +24,8 @@ namespace SignOVService.Model.Smev.Sign
 
 		}
 
-		public Smev3xxSignedXml(XmlDocument document)
+		public Smev3xxSignedXml(XmlDocument document) :
+			base(document)
 		{
 			containingDocument = document.DocumentElement;
 		}
@@ -32,9 +35,26 @@ namespace SignOVService.Model.Smev.Sign
 		/// </summary>
 		/// <param name="prefix"></param>
 		/// <param name="certificate"></param>
-		public void ComputeSignatureWithoutPrivateKey(string prefix, X509Certificate2 certificate)
+		public void ComputeSignatureWithoutPrivateKey(string prefix, /*X509Certificate2*/X509Certificate2Custom certificate)
 		{
+			CryptoConfig.AddAlgorithm(typeof(Gost3411XmlHash), new string[1] { "http://www.w3.org/2001/04/xmldsig-more#gostr3411" });
+			CryptoConfig.AddAlgorithm(typeof(SmevTransformAlg), new string[1] { SmevTransformAlg.ALGORITHM_URI });
 
+			BuildDigestedReferences();
+
+			HashAlgorithm hash = new Gost3411XmlHash();
+			GetDigest(hash, prefix);
+
+			uint keySpec = CryptoConst.AT_SIGNATURE;
+			IntPtr cpHandle = CryptoProvider.GetHandler(CryptoProvider.IsLinux ? certificate.CertHandle : certificate.Handle, out keySpec);
+
+			int algId = CryptoProvider.ObjToAlgId(hash, OidGroup.HashAlgorithm);
+			byte[] numArray = CryptoProvider.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
+			Array.Reverse(numArray);
+
+			m_signature.SignatureValue = numArray;
+
+			CApiLite.CryptReleaseContext(cpHandle, 0);
 		}
 
 		/// <summary>

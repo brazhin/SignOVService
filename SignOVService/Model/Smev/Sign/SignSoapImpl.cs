@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using SignOVService.Model.Cryptography;
+using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 
@@ -9,15 +11,15 @@ namespace SignOVService.Model.Smev.Sign
 		private readonly ILogger<SignSoapImpl> log;
 		private readonly SoapSignUtil senderSignUtil;
 
-		public SignSoapImpl(ILoggerFactory loggerFactory, X509Certificate2 currentCertificate, MR mR)
+		public SignSoapImpl(ILoggerFactory loggerFactory, /*X509Certificate2*/X509Certificate2Custom currentCertificate, MR mR)
 		{
-			this.log = loggerFactory.CreateLogger<SignSoapImpl>();
+			log = loggerFactory.CreateLogger<SignSoapImpl>();
 
-			this.Certificate = currentCertificate;
-			this.senderSignUtil = new SoapSignUtil(loggerFactory, Certificate, mR);
+			Certificate = currentCertificate;
+			senderSignUtil = new SoapSignUtil(loggerFactory, Certificate, mR);
 		}
 
-		public X509Certificate2 Certificate { get; }
+		public /*X509Certificate2*/X509Certificate2Custom Certificate { get; }
 
 		/// <summary>
 		/// Метод подписания, модифицирует xml перед подписанием и после подписания в случае если версия мр == 244 или 255

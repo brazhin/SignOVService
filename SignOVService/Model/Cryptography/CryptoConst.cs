@@ -5,6 +5,9 @@ namespace SignOVService.Model.Cryptography
 {
 	internal class CryptoConst
 	{
+		internal const int CSP_TYPE = 75;
+		internal const long CRYPT_VERIFYCONTEXT = 0xF0000000;
+
 		internal const uint AT_KEYEXCHANGE = 1;
 		internal const uint AT_SIGNATURE = 2;
 
@@ -120,8 +123,49 @@ namespace SignOVService.Model.Cryptography
 		internal const uint CERT_FIND_ISSUER_STR_A = ((int)CERT_COMPARE_NAME_STR_A << (int)CERT_COMPARE_SHIFT | (int)CERT_INFO_ISSUER_FLAG);
 		internal const uint CERT_FIND_EXISTING = ((int)CERT_COMPARE_EXISTING << (int)CERT_COMPARE_SHIFT);
 		internal const uint CERT_FIND_ENHKEY_USAGE = ((int)CERT_COMPARE_ENHKEY_USAGE << (int)CERT_COMPARE_SHIFT);
+
+		/// <summary>
+		///A PROV_ENUMALGS structure that contains information about one algorithm supported by the CSP being queried.
+		///The first time this value is read, the dwFlags parameter must contain the CRYPT_FIRST flag. Doing so causes this function to retrieve the first element in the enumeration. The subsequent elements can then be retrieved by setting the CRYPT_NEXT flag in the dwFlags parameter. When this function fails with the ERROR_NO_MORE_ITEMS error code, the end of the enumeration has been reached.
+		///This function is not thread safe, and all of the available algorithms might not be enumerated if this function is used in a multithreaded context.
+		/// </summary>
+		internal const int CGPP_PP_ENUMALGS = 1;// (0x1)
+
+		/// <summary>
+		///Retrieve the element without flag.
+		/// </summary>
+		internal const int CGPP_CRYPT_ZERO = 0;// (0x1)
+
+		/// <summary>
+		///Retrieve the first element in the enumeration. This has the same effect as resetting the enumerator.
+		/// </summary>
+		internal const int CGPP_CRYPT_FIRST = 1;// (0x1)
+
+		/// <summary>
+		///Retrieve the next element in the enumeration. When there are no more elements to retrieve, this function will fail and set the last error to ERROR_NO_MORE_ITEMS.
+		/// </summary>
+		internal const int CGPP_CRYPT_NEXT = 2;// (0x2)
+
+		/// <summary>
+		///This option is intended for applications that are using ephemeral keys, or applications that do not require access to persisted private keys, such as applications that perform only hashing, encryption, and digital signature verification. Only applications that create signatures or decrypt messages need access to a private key. In most cases, this flag should be set.
+		///For file-based CSPs, when this flag is set, the pszContainer parameter must be set to NULL. The application has no access to the persisted private keys of public/private key pairs. When this flag is set, temporary public/private key pairs can be created, but they are not persisted.
+		///For hardware-based CSPs, such as a smart card CSP, if the pszContainer parameter is NULL or blank, this flag implies that no access to any keys is required, and that no UI should be presented to the user. This form is used to connect to the CSP to query its capabilities but not to actually use its keys. If the pszContainer parameter is not NULL and not blank, then this flag implies that access to only the publicly available information within the specified container is required. The CSP should not ask for a PIN. Attempts to access private information (for example, the CryptSignHash function) will fail.
+		///When CryptAcquireContext is called, many CSPs require input from the owning user before granting access to the private keys in the key container. For example, the private keys can be encrypted, requiring a password from the user before they can be used. However, if the CRYPT_VERIFYCONTEXT flag is specified, access to the private keys is not required and the user interface can be bypassed.
+		/// </summary>
+		internal const uint CAC_CRYPT_VERIFYCONTEXT = 0xF0000000;
 	}
 
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct PROV_ENUMALGS
+	{
+		public int aiAlgid; //4
+		public uint dwBitLen; //4
+		public uint dwNameLen; //4
+		public fixed byte rgExtension[20]; //20
+		//public byte[] rgExtension;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
 	public struct CRYPTOAPI_BLOB
 	{
 		public int cbData;

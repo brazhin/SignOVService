@@ -51,7 +51,7 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 		public bool SignWithId { get; set; }
 		public MR MrVersion { get; }
 
-		public XmlDocument SignMessageAsOv(XmlDocument doc, X509Certificate2 certificate)
+		public XmlDocument SignMessageAsOv(XmlDocument doc, /*X509Certificate2*/X509Certificate2Custom certificate)
 		{
 			if (MrVersion != MR.MR300)
 			{
@@ -61,8 +61,8 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 			try
 			{
 				// Подписываем вложения
-				doc = SignAttachmentsOv(doc, certificate);
-				doc.Save("signed.xml");
+				//doc = SignAttachmentsOv(doc, certificate);
+				//doc.Save("signed.xml");
 			}
 			catch (Exception ex)
 			{
@@ -127,7 +127,7 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 		/// <param name="tag"></param>
 		/// <param name="namespaceUri"></param>
 		/// <param name="fillInTheEnd">Прикрепить подпись в конец?</param>
-		private void FillSignatureElement(XmlDocument doc, XmlElement signatureElem, X509Certificate2 certificate, string tag, string namespaceUri, bool fillInTheEnd)
+		private void FillSignatureElement(XmlDocument doc, XmlElement signatureElem, /*X509Certificate2*/X509Certificate2Custom certificate, string tag, string namespaceUri, bool fillInTheEnd)
 		{
 			XmlElement tagElem = (XmlElement)doc.GetElementsByTagName(tag, namespaceUri)[0];
 			if (fillInTheEnd)
@@ -297,18 +297,7 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		private XmlDocument SignAttachmentsOv(XmlDocument doc, X509Certificate2 certificate)
-		{
-			return SignAttachmentsOv(doc, certificate.Handle);
-		}
-
-		/// <summary>
-		/// Метод подписания вложений подписью органа власти
-		/// </summary>
-		/// <param name="doc"></param>
-		/// <param name="certificate"></param>
-		/// <returns></returns>
-		private XmlDocument SignAttachmentsOv(XmlDocument doc, IntPtr certificate)
+		private XmlDocument SignAttachmentsOv(XmlDocument doc, /*X509Certificate2*/X509Certificate2Custom certificate)
 		{
 			XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
 
@@ -345,7 +334,7 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 
 							if (content != null && content.Content != null && content.Content.Length > 0)
 							{
-								byte[] signature = signatureCryptography.SignWithCertificate(new MemoryStream(content.Content), certificate);
+								byte[] signature = signatureCryptography.SignWithCertificate(new MemoryStream(content.Content), CryptoProvider.IsLinux ? certificate.CertHandle : certificate.Handle);
 								header.SignaturePKCS7 = signature;
 								changed = true;
 							}
@@ -469,57 +458,57 @@ namespace SignOVService.Model.Smev.Sign.SoapSigners
 		{
 			string result = string.Empty;
 
-			//if (MrVersion == MR.MR300)
-			//{
-			//	this.tagForSignNamespaceUri = NamespaceUri.Smev3Types;
-			//	string[] tagNames = SmevMr3xxTags.GetAllRequestTags();
+			if (MrVersion == MR.MR300)
+			{
+				tagForSignNamespaceUri = NamespaceUri.Smev3Types;
+				string[] tagNames = SmevMr3xxTags.GetAllRequestTags();
 
-			//	string baseTagName = string.Empty;
-			//	XmlElement basetElem = null;
+				string baseTagName = string.Empty;
+				XmlElement basetElem = null;
 
-			//	if (tagNames != null)
-			//	{
-			//		for (int elemCounter = 0; (elemCounter < tagNames.Length) && (string.IsNullOrEmpty(baseTagName)); elemCounter++)
-			//		{
-			//			string elemName = tagNames[elemCounter];
-			//			string lowerName = elemName.ToLower();
+				if (tagNames != null)
+				{
+					for (int elemCounter = 0; (elemCounter < tagNames.Length) && (string.IsNullOrEmpty(baseTagName)); elemCounter++)
+					{
+						string elemName = tagNames[elemCounter];
+						string lowerName = elemName.ToLower();
 
-			//			this.tagForSignNamespaceUri = SmevMr3xxTags.GetNamespaceTagByTag(elemName);
+						tagForSignNamespaceUri = SmevMr3xxTags.GetNamespaceTagByTag(elemName);
 
-			//			basetElem = (XmlElement)doc.GetElementsByTagName(elemName, this.tagForSignNamespaceUri)[0] ??
-			//						 (XmlElement)doc.GetElementsByTagName(lowerName, this.tagForSignNamespaceUri)[0];
-			//			if (basetElem != null)
-			//			{
-			//				baseTagName = elemName;
-			//			}
-			//		}
-			//	}
+						basetElem = (XmlElement)doc.GetElementsByTagName(elemName, tagForSignNamespaceUri)[0] ??
+									 (XmlElement)doc.GetElementsByTagName(lowerName, tagForSignNamespaceUri)[0];
+						if (basetElem != null)
+						{
+							baseTagName = elemName;
+						}
+					}
+				}
 
-			//	this.tagForRequest = baseTagName;
-			//	this.tagForRequestNamespaceUri = this.tagForSignNamespaceUri;
-			//	this.tagForSignNamespaceUri = NamespaceUri.Smev3TypesBasic;
-			//	tagNames = SmevMr3xxTags.GetSignTagByRequestTag(baseTagName);
+				tagForRequest = baseTagName;
+				tagForRequestNamespaceUri = tagForSignNamespaceUri;
+				tagForSignNamespaceUri = NamespaceUri.Smev3TypesBasic;
+				tagNames = SmevMr3xxTags.GetSignTagByRequestTag(baseTagName);
 
-			//	XmlElement targetElem = null;
+				XmlElement targetElem = null;
 
-			//	if (tagNames != null)
-			//	{
-			//		for (int elemCounter = 0; (elemCounter < tagNames.Length) && (string.IsNullOrEmpty(result)); elemCounter++)
-			//		{
-			//			string elemName = tagNames[elemCounter];
-			//			string lowerName = elemName.ToLower();
+				if (tagNames != null)
+				{
+					for (int elemCounter = 0; (elemCounter < tagNames.Length) && (string.IsNullOrEmpty(result)); elemCounter++)
+					{
+						string elemName = tagNames[elemCounter];
+						string lowerName = elemName.ToLower();
 
-			//			this.tagForSignNamespaceUri = SmevMr3xxTags.GetNamespaceTagByTag(elemName);
+						tagForSignNamespaceUri = SmevMr3xxTags.GetNamespaceTagByTag(elemName);
 
-			//			targetElem = (XmlElement)doc.GetElementsByTagName(elemName, this.tagForSignNamespaceUri)[0] ??
-			//						 (XmlElement)doc.GetElementsByTagName(lowerName, this.tagForSignNamespaceUri)[0];
-			//			if (targetElem != null)
-			//			{
-			//				result = elemName;
-			//			}
-			//		}
-			//	}
-			//}
+						targetElem = (XmlElement)doc.GetElementsByTagName(elemName, tagForSignNamespaceUri)[0] ??
+									 (XmlElement)doc.GetElementsByTagName(lowerName, tagForSignNamespaceUri)[0];
+						if (targetElem != null)
+						{
+							result = elemName;
+						}
+					}
+				}
+			}
 
 			return result;
 		}
