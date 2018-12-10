@@ -1,66 +1,51 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SignOVService.Model.Cryptography;
+using SignService;
 
 namespace SignOVService.Controllers
 {
 	[Route("tests")]
 	public class TestsController : Controller
 	{
-		private readonly CryptoProvider crypto;
-		//private readonly ILogger<TestsController> log;
+		private readonly SignServiceProvider provider;
 
-		public TestsController()
+		public TestsController(ILoggerFactory logggerFactory, SignServiceProvider provider)
 		{
-			crypto = new CryptoProvider();
+			this.provider = provider;
 		}
 
-		//public TestsController(ILogger<TestsController> log)
-		//{
-		//	this.log = log;
-		//}
-
-		[HttpGet("sign")]
-		public IActionResult SignTest()
+		[HttpGet]
+		public IActionResult GetProvider()
 		{
 			try
 			{
-				//log.LogDebug("Получили запрос на выполнение теста.");
+				IntPtr provider = IntPtr.Zero;
+				provider = CryptoProvider.TryGetGostProvider();
 
-				var crypto = new CryptoProvider();
-				string gostThumbprint = "af976d0aca919d3df62649501e92145b5ed59967";//"8067b09d8564842d4285e400cf91c27c72cf4d0f";
+				if (provider == IntPtr.Zero || provider == null)
+					return BadRequest("Не удалось найти провайдер для работы с алгоритмами ГОСТ.");
 
-				byte[] arr;
-				using (var fs = System.IO.File.OpenRead("testSigned.xml"))
-				{
-					var memory = new MemoryStream();
-					fs.CopyTo(memory);
-
-					arr = memory.ToArray();
-				}
-
-				var sign = crypto.Sign(arr, gostThumbprint);
-
-				return Ok(sign);
+				return Ok();
 			}
 			catch(Exception ex)
 			{
-				//log.LogError($"В результате теста возникла ошибка: Message:{ex.Message}, InnerException: {ex.InnerException.Message}.");
-				return BadRequest(ex.Message);
+				return BadRequest($"Internal Server Error: {ex.Message}.");
 			}
 		}
 
 		/// <summary>
-		/// Тестовый метод для проверки подписания файла.
-		/// Принимает файл в запросе MultipartFormData подписывает и возвращает файл с подписью
+		/// Тестовый метод создания открепленной подписи
 		/// </summary>
 		/// <returns></returns>
-		[HttpPost("signfile")]
-		public IActionResult SignFile()
+		[HttpPost("createsign")]
+		public IActionResult TestSignServiceLib()
 		{
 			try
 			{
@@ -80,13 +65,61 @@ namespace SignOVService.Controllers
 					return BadRequest("Не удалось получить значение thumbprint для поиска сертификата.");
 				}
 
-				var sign = crypto.Sign(stream.ToArray(), thumbprint);
+				// Подписываем данные
+				var sign = provider.Sign(stream.ToArray(), thumbprint);
 
 				return File(sign, "application/x-msdownload", "sign.sig");
 			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
+			}
+		}
+
+		/// <summary>
+		/// Тестовый метод проверки открепленной подписи
+		/// </summary>
+		/// <returns></returns>
+		[HttpPost("verifysign")]
+		public IActionResult VerifyDetachedSign()
+		{
+			try
+			{
+				if (HttpContext.Request.Form.Files.Count <= 0)
+					return BadRequest("Файлов для подписания не обнаружено.");
+
+				var files = HttpContext.Request.Form.Files;
+
+				var sign = files.FirstOrDefault(x => Path.GetExtension(x.FileName) == ".sig");
+				if (sign == null)
+				{
+					return BadRequest("Не удалось найти файл с расширением .sig (подпись) в запросе.");
+				}
+
+				var data = files.FirstOrDefault(x => Path.GetExtension(x.FileName) != ".sig");
+				if (data == null)
+				{
+					return BadRequest("Не удалось найти файл с данными в запросе.");
+				}
+
+				var signStream = new MemoryStream();
+				sign.CopyTo(signStream);
+
+				var dataStream = new MemoryStream();
+				data.CopyTo(dataStream);
+
+				X509Certificate2 cert = null;
+				var result = provider.VerifyDetachedMessage(signStream.ToArray(), dataStream.ToArray(), false, ref cert);
+
+				return Ok(new
+				{
+					VerifyResult = result,
+					CertSubject = cert.Subject
+				});
+			}
 			catch(Exception ex)
 			{
-				return BadRequest($"Internal Server Error: {ex.Message}.");
+				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
 			}
 		}
 	}
