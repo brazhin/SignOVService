@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
 using SignService.Unix.Api;
+using SignService.Unix.Gost;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -21,6 +23,18 @@ namespace SignService.Unix
 		{
 			this.loggerFactory = loggerFactory;
 			this.log = loggerFactory.CreateLogger<SignServiceUnix>();
+		}
+
+		/// <summary>
+		/// Метод подписи xml
+		/// </summary>
+		/// <param name="xml"></param>
+		/// <param name="mr"></param>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
+		internal string SignXml(string xml, Mr mr, string thumbprint)
+		{
+			throw new NotImplementedException();
 		}
 
 		/// <summary>
@@ -220,6 +234,97 @@ namespace SignService.Unix
 		}
 
 		/// <summary>
+		/// Метод получения хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="algId"></param>
+		/// <returns></returns>
+		internal string GetHashBySigAlgId(Stream data, uint algId)
+		{
+			log.LogDebug("Запущен метод получения хэш под Windows платформой.");
+
+			byte[] hashResult = null;
+
+			if (algId == CApiExtConst.GOST341194)
+			{
+				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2001");
+				HashAlgorithm hash = new Gost2001Unix();
+				hashResult = hash.ComputeHash(data);
+			}
+			else if (algId == CApiExtConst.GOST2012_256)
+			{
+				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-256");
+				var hash = new Gost2012_256Unix();
+				hashResult = hash.ComputeHash(data);
+			}
+			else if (algId == CApiExtConst.GOST2012_512)
+			{
+				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-512");
+				var hash = new Gost2012_512Unix();
+				hashResult = hash.ComputeHash(data);
+			}
+			else
+			{
+				log.LogDebug($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам. Используем криптопровайдер системы.");
+				throw new CryptographicException($"Неизвестный алгоритм хэширования: {algId}.");
+				// Ветка для использования MS провайдера при формировании хэш
+				//HashAlgorithm hash = new HashMsApiUtil((int)algId);
+				//hashResult = hash.ComputeHash(data);
+			}
+
+			if (hashResult == null || hashResult.Length <= 0)
+			{
+				log.LogError("Не удалось вычислить хэш. Отсутствует значение.");
+				throw new CryptographicException("Ошибка при получении хэш.");
+			}
+
+			log.LogDebug($"Хэш получен. Преобразуем в Hex строку.");
+
+			var hexStr = SignServiceUtils.ConvertByteToHex(hashResult);
+
+			log.LogDebug("Преобразование выполнено успешно.");
+
+			return hexStr;
+		}
+
+		/// <summary>
+		/// Метод получения алгоритма хэширования
+		/// </summary>
+		/// <param name="signatureAlgOid"></param>
+		/// <returns></returns>
+		internal CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
+		{
+			IntPtr sigId = CApiExtUnix.CryptFindOIDInfo(OidKeyType.Oid, signatureAlgOid, OidGroup.SignatureAlgorithm);
+
+			CRYPT_OID_INFO CertInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigId);
+
+			uint alg = CertInfo.Algid;
+
+			IntPtr int_addr = Marshal.AllocHGlobal(Marshal.SizeOf(alg));
+			Marshal.WriteInt32(int_addr, (int)alg);
+
+			IntPtr sigs = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.SignatureAlgorithm);
+
+			CRYPT_OID_INFO sigsInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigs);
+
+			if (sigs == IntPtr.Zero)
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			IntPtr hass = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.HashAlgorithm);
+
+			CRYPT_OID_INFO hassInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(hass);
+
+			if (hass == IntPtr.Zero)
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			return hassInfo;
+		}
+
+		/// <summary>
 		/// Метод реализующий подписание данных
 		/// </summary>
 		/// <param name="data"></param>
@@ -321,43 +426,6 @@ namespace SignService.Unix
 				Marshal.FreeHGlobal(rgpbToBeSigned);
 				pGC.Free();
 			}
-		}
-
-		/// <summary>
-		/// Метод получения алгоритма хэширования
-		/// </summary>
-		/// <param name="signatureAlgOid"></param>
-		/// <returns></returns>
-		internal CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
-		{
-			IntPtr sigId = CApiExtUnix.CryptFindOIDInfo(OidKeyType.Oid, signatureAlgOid, OidGroup.SignatureAlgorithm);
-
-			CRYPT_OID_INFO CertInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigId);
-
-			uint alg = CertInfo.Algid;
-
-			IntPtr int_addr = Marshal.AllocHGlobal(Marshal.SizeOf(alg));
-			Marshal.WriteInt32(int_addr, (int)alg);
-
-			IntPtr sigs = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.SignatureAlgorithm);
-
-			CRYPT_OID_INFO sigsInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigs);
-
-			if (sigs == IntPtr.Zero)
-			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
-			}
-
-			IntPtr hass = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.HashAlgorithm);
-
-			CRYPT_OID_INFO hassInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(hass);
-
-			if (hass == IntPtr.Zero)
-			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
-			}
-
-			return hassInfo;
 		}
 	}
 }

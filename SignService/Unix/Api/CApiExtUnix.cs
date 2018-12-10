@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -9,6 +10,77 @@ namespace SignService.Unix.Api
 	internal class CApiExtUnix
 	{
 		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
+
+		/// <summary>
+		/// Функция CryptCreateHash начинает хеширование потока данных. 
+		/// Она создает и возвращает вызвавшему ее приложению дескриптор объекта функции хеширования CSP.
+		/// </summary>
+		/// <param name="hProv"></param>
+		/// <param name="Algid"></param>
+		/// <param name="hKey"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="phHash"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptCreateHash([In] IntPtr hProv, [In] uint Algid, [In] IntPtr hKey, [In] uint dwFlags, [In][Out] ref IntPtr phHash);
+
+		/// <summary>
+		/// Функция CryptAcquireContext используется для получения дескриптора к конкретному контейнеру ключей в конкретном поставщике криптографических услуг (CSP).
+		/// </summary>
+		/// <param name="hProv"></param>
+		/// <param name="pszContainer"></param>
+		/// <param name="pszProvider"></param>
+		/// <param name="dwProvType"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, BestFitMapping = false, CharSet = CharSet.Auto, ExactSpelling = false, SetLastError = true, ThrowOnUnmappableChar = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptAcquireContext([In][Out] ref IntPtr hProv, [In] string pszContainer, [In] string pszProvider, [In] uint dwProvType, [In] uint dwFlags);
+
+		/// <summary>
+		/// Функция CryptGetHashParam получает данные, управляющие операциями объекта функции хеширования. 
+		/// При использовании этой функции может быть получено действительное значение хеша.
+		/// </summary>
+		/// <param name="hHash"></param>
+		/// <param name="dwParam"></param>
+		/// <param name="pbData"></param>
+		/// <param name="pdwDataLen"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptGetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, ref uint pdwDataLen, [In] uint dwFlags);
+
+		/// <summary>
+		/// Функция CryptHashData добавляет данные в определенный объект функции хеширования. 
+		/// Эта функция, а также функция CryptHashSessionKey могут быть вызваны несколько раз для вычисления хеша длинного или дискретного потока данных.
+		/// Перед вызовом этой функции необходимо вызвать функцию CryptCreateHash для создания дескриптора объекта функции хеширования.
+		/// </summary>
+		/// <param name="hHash"></param>
+		/// <param name="pbData"></param>
+		/// <param name="dwDataLen"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptHashData([In] IntPtr hHash, byte[] pbData, [In] uint dwDataLen, [In] uint dwFlags);
+
+		/// <summary>
+		/// Функция CryptDestroyHash уничтожает объект функции хеширования, ссылающийся на параметр hHash. 
+		/// После того, как объект функции хеширования уничтожен, он не может больше использоваться.
+		/// </summary>
+		/// <param name="pHashCtx"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptDestroyHash(IntPtr pHashCtx);
 
 		/// <summary>
 		/// Функция проверки открепленной подписи

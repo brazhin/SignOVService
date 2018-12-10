@@ -5,7 +5,9 @@ using SignService.Win;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using static SignService.CApiExtConst;
 
 namespace SignService
 {
@@ -35,6 +37,55 @@ namespace SignService
 			}
 		}
 
+		public string SignXml(string xml, Mr mr, string thumbprint)
+		{
+			string signedXml = string.Empty;
+
+			if (IsUnix)
+			{
+				var unixService = new SignServiceUnix(loggerFactory);
+				signedXml = unixService.SignXml(xml, mr, thumbprint);
+			}
+			else
+			{
+
+			}
+
+			return signedXml;
+		}
+
+		/// <summary>
+		/// Метод получения хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="certificate"></param>
+		/// <param name="pluginHashAlg"></param>
+		/// <returns></returns>
+		public string CreateHash(Stream data, IntPtr certificate, ref int pluginHashAlg)
+		{
+			log.LogDebug("Получаем значение алгоритма публичного ключа.");
+
+			var certContext = Marshal.PtrToStructure<CERT_CONTEXT>(certificate);
+			var certInfo = Marshal.PtrToStructure<CERT_INFO>(certContext.pCertInfo);
+
+			string publicKeyAlg = certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId;
+
+			return ComputeHash(data, publicKeyAlg, ref pluginHashAlg);
+		}
+
+		/// <summary>
+		/// Метод получения хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="certificate"></param>
+		/// <param name="pluginHashAlg"></param>
+		/// <returns></returns>
+		public string CreateHash(Stream data, IntPtr certificate)
+		{
+			int plugHashAlg = 0;
+			return CreateHash(data, certificate, ref plugHashAlg);
+		}
+
 		/// <summary>
 		/// Метод получения хэш
 		/// </summary>
@@ -46,24 +97,11 @@ namespace SignService
 			log.LogDebug("Получаем значение алгоритма публичного ключа.");
 			string publicKeyAlg = certificate.PublicKey.Oid.Value;
 
-			log.LogDebug($"Определяем алгоритм хэширования по значению алгоритма публичного ключа: {publicKeyAlg}.");
-			// Определение алгоритма.
-			var algId = GetHashAlg(publicKeyAlg);
-
-			log.LogDebug("Определяем идентификатор алгоритма для использования в плагине КриптоПро.");
-			// Определение идентификатора алгоритма для использование в плагине КриптоПро.
-			var hashAlgForPlugin = SignServiceUtils.GetHashCodeForPlugin(algId);
-			pluginHashAlg = hashAlgForPlugin;
-
-			log.LogDebug("Вычисляем хэш.");
-			// Вычисление хэш.
-			var base64Hash = GetHashBySigAlgId(data, algId);
-
-			return base64Hash;
+			return ComputeHash(data, publicKeyAlg, ref pluginHashAlg);
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получения хэш
 		/// </summary>
 		/// <param name="data"></param>
 		/// <param name="certificate"></param>
@@ -136,6 +174,50 @@ namespace SignService
 		}
 
 		/// <summary>
+		/// Метод получения хэндлера сертификата
+		/// </summary>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
+		public IntPtr GetCertificateHandle(string thumbprint)
+		{
+			if (IsUnix)
+			{
+				var unixService = new SignServiceUnix(loggerFactory);
+				return unixService.FindCertificate(thumbprint);
+			}
+			else
+			{
+				var winService = new SignServiceWin(loggerFactory);
+				return winService.FindCertificate(thumbprint);
+			}
+		}
+
+		/// <summary>
+		/// Метод рассчета хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="publicKeyAlg"></param>
+		/// <param name="pluginHashAlg"></param>
+		/// <returns></returns>
+		private string ComputeHash(Stream data, string publicKeyAlg, ref int pluginHashAlg)
+		{
+			log.LogDebug($"Определяем алгоритм хэширования по значению алгоритма публичного ключа: {publicKeyAlg}.");
+			// Определение алгоритма.
+			var algId = GetHashAlg(publicKeyAlg);
+
+			log.LogDebug("Определяем идентификатор алгоритма для использования в плагине КриптоПро.");
+			// Определение идентификатора алгоритма для использование в плагине КриптоПро.
+			var hashAlgForPlugin = SignServiceUtils.GetHashCodeForPlugin(algId);
+			pluginHashAlg = hashAlgForPlugin;
+
+			log.LogDebug("Вычисляем хэш.");
+			// Вычисление хэш.
+			var base64Hash = GetHashBySigAlgId(data, algId);
+
+			return base64Hash;
+		}
+
+		/// <summary>
 		/// Метод получения алгоритма хэширования
 		/// </summary>
 		/// <param name="signatureAlgOid"></param>
@@ -146,7 +228,7 @@ namespace SignService
 
 			if (IsUnix)
 			{
-				log.LogDebug("Получаем алгоритм хэширования под Windows платформой.");
+				log.LogDebug("Получаем алгоритм хэширования под Unix платформой.");
 
 				var unixService = new SignServiceUnix(loggerFactory);
 				var cryptOidInfo = unixService.GetHashAlg(signatureAlgOid);
@@ -172,8 +254,9 @@ namespace SignService
 		{
 			if (IsUnix)
 			{
-				log.LogError("Отсутствует реализация для Unix системы.");
-				throw new Exception("Отсутствует реализация для Unix системы.");
+				log.LogDebug("Вычисляем хэш под Unix платформой.");
+				var unixService = new SignServiceUnix(loggerFactory);
+				return unixService.GetHashBySigAlgId(data, algId);
 			}
 			else
 			{

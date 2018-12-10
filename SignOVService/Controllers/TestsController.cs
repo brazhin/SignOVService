@@ -122,5 +122,44 @@ namespace SignOVService.Controllers
 				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
 			}
 		}
+
+		/// <summary>
+		/// Метод создания хэш
+		/// </summary>
+		/// <returns></returns>
+		[HttpPost("createhash")]
+		public IActionResult CreateHash()
+		{
+			try
+			{
+				if (HttpContext.Request.Form.Files.Count <= 0)
+					return BadRequest("Файлов для подписания не обнаружено.");
+
+				var form = HttpContext.Request.Form;
+				var file = HttpContext.Request.Form.Files[0];
+
+				var stream = new MemoryStream();
+				file.CopyTo(stream);
+
+				string thumbprint = form["thumbprint"];
+
+				if (string.IsNullOrEmpty(thumbprint))
+				{
+					return BadRequest("Не удалось получить значение thumbprint для поиска сертификата.");
+				}
+
+				// Получаем сертификат на основе которого рассчитываем хэш
+				var certHandle = provider.GetCertificateHandle(thumbprint);
+
+				// Подписываем данные
+				var hash = provider.CreateHash(stream, certHandle);
+
+				return Ok(hash);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
+			}
+		}
 	}
 }
