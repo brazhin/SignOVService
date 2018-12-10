@@ -1,12 +1,66 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Cryptography;
 using static SignService.CApiExtConst;
 
-namespace SignService
+namespace SignService.Unix.Api
 {
 	internal class CApiExtUnix
 	{
 		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
+
+		/// <summary>
+		/// Функция проверки открепленной подписи
+		/// </summary>
+		/// <param name="pVerifyPara"></param>
+		/// <param name="dwSignerIndex"></param>
+		/// <param name="pbDetachedSignBlob"></param>
+		/// <param name="cbDetachedSignBlob"></param>
+		/// <param name="cToBeSigned"></param>
+		/// <param name="rgpbToBeSigned"></param>
+		/// <param name="rgcbToBeSigned"></param>
+		/// <param name="ppSignerCert"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, SetLastError = true)]
+		static internal extern bool CryptVerifyDetachedMessageSignature(
+			ref CRYPT_VERIFY_MESSAGE_PARA pVerifyPara,
+			int dwSignerIndex,
+			byte[] pbDetachedSignBlob,
+			int cbDetachedSignBlob,
+			int cToBeSigned,
+			IntPtr[] rgpbToBeSigned,
+			int[] rgcbToBeSigned,
+			IntPtr ppSignerCert
+		);
+
+		/// <summary>
+		/// Функция CryptFindOIDInfo получает первую предопределенную или зарегистрированную структуру CRYPT_OID_INFO, 
+		/// согласованную с определенным типом ключа и с ключем. Поиск может быть ограничен идентификаторами объекта, 
+		/// принадлежащими определенной группе идентификаторов объекта.
+		/// </summary>
+		/// <param name="dwKeyType"></param>
+		/// <param name="pvKey"></param>
+		/// <param name="dwGroupId"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, IntPtr pvKey, OidGroup dwGroupId);
+
+		/// <summary>
+		/// Функция CryptFindOIDInfo получает первую предопределенную или зарегистрированную структуру CRYPT_OID_INFO, 
+		/// согласованную с определенным типом ключа и с ключем. Поиск может быть ограничен идентификаторами объекта, 
+		/// принадлежащими определенной группе идентификаторов объекта.
+		/// </summary>
+		/// <param name="dwKeyType"></param>
+		/// <param name="pvKey"></param>
+		/// <param name="dwGroupId"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, String pvKey, OidGroup dwGroupId);
 
 		/// <summary>
 		/// Функция открывает хранилище сертификатов
@@ -51,7 +105,7 @@ namespace SignService
 			[In] uint dwCertEncodingType,
 			[In] uint dwFindFlags,
 			[In] uint dwFindType,
-			[In] ref CRYPT_HASH_BLOB pvFindPara,
+			[In] ref CApiExtConst.CRYPT_HASH_BLOB pvFindPara,
 			[In] IntPtr pPrevCertContext
 		);
 
@@ -69,7 +123,7 @@ namespace SignService
 		/// <returns></returns>
 		[DllImport(libCapi20, SetLastError = true)]
 		internal static extern bool CryptSignMessage(
-			[In] ref CRYPT_SIGN_MESSAGE_PARA pSignPara,
+			[In] ref CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pSignPara,
 			[In] bool fDetachedSignature,
 			[In] uint cToBeSigned,
 			[In] IntPtr[] rgpbToBeSigned,
