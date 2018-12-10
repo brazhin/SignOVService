@@ -328,3 +328,7 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+/SignOVService/cert
+/SignOVService/dist
+/SignOVService/Logs
