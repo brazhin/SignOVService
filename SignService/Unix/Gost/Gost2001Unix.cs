@@ -12,7 +12,7 @@ using static SignService.CApiExtConst;
 namespace SignService.Unix.Gost
 {
 	[ComVisible(true)]
-	internal class Gost2001Unix : HashAlgorithm
+	public sealed class Gost2001Unix : HashAlgorithm
 	{
 		[SecurityCritical]
 		private IntPtr unsafeHashHandle;

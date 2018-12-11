@@ -1,17 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
+using SignService.Smev.XmlSigners;
 using SignService.Win.Api;
 using SignService.Win.Gost;
-using SignService.Win.Handles;
-using SignService.Win.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using System.Xml;
 using static SignService.CApiExtConst;
 
 namespace SignService.Win
@@ -32,7 +29,7 @@ namespace SignService.Win
 		/// </summary>
 		/// <param name="signatureAlgOid"></param>
 		/// <returns></returns>
-		internal CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
+		internal static CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
 		{
 			IntPtr sigId = CApiExtWin.CryptFindOIDInfo(OidKeyType.Oid, signatureAlgOid, OidGroup.SignatureAlgorithm);
 
@@ -62,6 +59,26 @@ namespace SignService.Win
 			}
 
 			return hassInfo;
+		}
+
+		/// <summary>
+		/// Метод подписи XML
+		/// </summary>
+		/// <param name="xml"></param>
+		/// <param name="mr"></param>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
+		internal string SignXml(string xml, Mr mr, string thumbprint)
+		{
+			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
+
+			var doc = new XmlDocument();
+			doc.LoadXml(xml);
+
+			var certHandle = FindCertificate(thumbprint);
+
+			var signedXml = signer.SignMessageAsOv(doc, certHandle);
+			return signedXml.OuterXml;
 		}
 
 		/// <summary>

@@ -3,6 +3,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
+using System.Text;
 using static SignService.CApiExtConst;
 
 namespace SignService.Unix.Api
@@ -10,6 +11,39 @@ namespace SignService.Unix.Api
 	internal class CApiExtUnix
 	{
 		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
+
+		[DllImport(libCapi20, CharSet = CharSet.Auto, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptAcquireCertificatePrivateKey([In] IntPtr pCert, [In] uint dwFlags, [In] IntPtr pvReserved,
+			[In, Out] ref IntPtr phCryptProv, [In, Out] ref uint pdwKeySpec, [In, Out] ref bool pfCallerFreeProv);
+
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptReleaseContext(IntPtr hCryptProv, uint dwFlags);
+
+		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptSetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, [In] uint dwFlags);
+
+		/// <summary>
+		/// Функция подписи хэша
+		/// </summary>
+		/// <param name="hHash"></param>
+		/// <param name="dwKeySpec"></param>
+		/// <param name="sDescription"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="pbSignature"></param>
+		/// <param name="pdwSigLen"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, BestFitMapping = false, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptSignHash([In] IntPtr hHash, [In] uint dwKeySpec, StringBuilder sDescription,
+			[In] uint dwFlags, [In][Out] byte[] pbSignature, ref uint pdwSigLen);
 
 		/// <summary>
 		/// Функция CryptCreateHash начинает хеширование потока данных. 

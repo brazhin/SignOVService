@@ -4,6 +4,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
+using System.Text;
 using static SignService.CApiExtConst;
 
 namespace SignService.Win.Api
@@ -12,6 +13,40 @@ namespace SignService.Win.Api
 	{
 		const string crypt32 = "crypt32.dll";
 		const string advapi32 = "advapi32.dll";
+
+		/// <summary>
+		/// Функция подписи хэша
+		/// </summary>
+		/// <param name="hHash"></param>
+		/// <param name="dwKeySpec"></param>
+		/// <param name="sDescription"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="pbSignature"></param>
+		/// <param name="pdwSigLen"></param>
+		/// <returns></returns>
+		[DllImport(advapi32, BestFitMapping = false, ExactSpelling = false, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptSignHash([In] SafeHashHandleCP hHash, [In] uint dwKeySpec, StringBuilder sDescription,
+			[In] uint dwFlags, [In][Out] byte[] pbSignature, ref uint pdwSigLen);
+
+		/// <summary>
+		/// Функция CryptAcquireCertificatePrivateKey получает закрытый ключ для сертификата. 
+		/// Эта функция используется для получения доступа к закрытому ключу пользователя, 
+		/// когда сертификат пользователя доступен, но дескриптор контейнера ключа пользователя недоступен. 
+		/// </summary>
+		/// <param name="pCert"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="pvReserved"></param>
+		/// <param name="phCryptProv"></param>
+		/// <param name="pdwKeySpec"></param>
+		/// <param name="pfCallerFreeProv"></param>
+		/// <returns></returns>
+		[DllImport(crypt32, CharSet = CharSet.Auto, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern bool CryptAcquireCertificatePrivateKey([In] IntPtr pCert, [In] uint dwFlags, [In] IntPtr pvReserved,
+			[In, Out] ref IntPtr phCryptProv, [In, Out] ref uint pdwKeySpec, [In, Out] ref bool pfCallerFreeProv);
 
 		/// <summary>
 		/// Функция открывает хранилище сертификатов

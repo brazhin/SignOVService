@@ -81,6 +81,32 @@ namespace SignService.Win.Utils
 			return numArray;
 		}
 
+		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
+		{
+			bool bResult = false;
+			IntPtr phProv = IntPtr.Zero;
+
+			keySpec = CApiExtConst.AT_SIGNATURE;
+			bool isNeedCleenup = true;
+
+			// Get CSP handle
+			bResult = CApiExtWin.CryptAcquireCertificatePrivateKey(
+				certHandle,
+				0,
+				IntPtr.Zero,
+				ref phProv,
+				ref keySpec,
+				ref isNeedCleenup
+				);
+
+			if (!bResult)
+			{
+				throw new Exception("CryptAcquireContext error #" + Marshal.GetLastWin32Error().ToString());
+			}
+
+			return phProv;
+		}
+
 		/// <summary>
 		/// Заполнение данными хэш объекта
 		/// </summary>
@@ -107,6 +133,38 @@ namespace SignService.Win.Utils
 			{
 				throw new Exception("Ошибка в методе HashData. " + ex.Message);
 			}
+		}
+
+		/// <summary>
+		/// Метод подписи хэш
+		/// </summary>
+		/// <param name="hProv"></param>
+		/// <param name="keyNumber"></param>
+		/// <param name="rgbHash"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="algId"></param>
+		/// <returns></returns>
+		internal static byte[] SignValue(IntPtr hProv, int keyNumber, byte[] rgbHash, int dwFlags, int algId)
+		{
+			byte[] signArray = null;
+			uint signArraySize = 0;
+
+			var prov = new SafeProvHandleCP(hProv);
+			var safeHashHandleCP = SetupHashAlgorithm(prov, rgbHash, algId);
+
+			if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			signArray = new byte[signArraySize];
+
+			if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			return signArray;
 		}
 
 		/// <summary>
@@ -237,6 +295,40 @@ namespace SignService.Win.Utils
 			{
 				throw new CryptographicException(Marshal.GetLastWin32Error());
 			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="prov"></param>
+		/// <param name="rgbHash"></param>
+		/// <param name="algId"></param>
+		/// <returns></returns>
+		[SecurityCritical]
+		private static SafeHashHandleCP SetupHashAlgorithm(SafeProvHandleCP prov, byte[] rgbHash, int algId)
+		{
+			SafeHashHandleCP invalidHandle = SafeHashHandleCP.InvalidHandle;
+
+			CreateHash(prov, algId, ref invalidHandle);
+
+			uint num = 0;
+
+			if (!CApiExtWin.CryptGetHashParam(invalidHandle, 2, null, ref num, 0))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			if ((ulong)((int)rgbHash.Length) != (ulong)num)
+			{
+				throw new CryptographicException(-2146893822);
+			}
+
+			if (!CApiExtWin.CryptSetHashParam(invalidHandle, 2, rgbHash, 0))
+			{
+				throw new CryptographicException(Marshal.GetLastWin32Error());
+			}
+
+			return invalidHandle;
 		}
 	}
 }

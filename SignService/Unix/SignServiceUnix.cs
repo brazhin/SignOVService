@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
+using SignService.Smev.XmlSigners;
 using SignService.Unix.Api;
 using SignService.Unix.Gost;
 using System;
@@ -7,6 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Xml;
 using static SignService.CApiExtConst;
 
 namespace SignService.Unix
@@ -34,7 +36,15 @@ namespace SignService.Unix
 		/// <returns></returns>
 		internal string SignXml(string xml, Mr mr, string thumbprint)
 		{
-			throw new NotImplementedException();
+			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
+
+			var doc = new XmlDocument();
+			doc.LoadXml(xml);
+
+			var certHandle = FindCertificate(thumbprint);
+
+			var signedXml = signer.SignMessageAsOv(doc, certHandle);
+			return signedXml.OuterXml;
 		}
 
 		/// <summary>
@@ -292,7 +302,7 @@ namespace SignService.Unix
 		/// </summary>
 		/// <param name="signatureAlgOid"></param>
 		/// <returns></returns>
-		internal CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
+		internal static CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
 		{
 			IntPtr sigId = CApiExtUnix.CryptFindOIDInfo(OidKeyType.Oid, signatureAlgOid, OidGroup.SignatureAlgorithm);
 

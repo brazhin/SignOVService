@@ -25,30 +25,19 @@ namespace SignService
 			this.log = loggerFactory.CreateLogger<SignServiceProvider>();
 		}
 
-		/// <summary>
-		/// Свойство определяет тип платформы
-		/// </summary>
-		private bool IsUnix
-		{
-			get
-			{
-				int iPlatform = (int)Environment.OSVersion.Platform;
-				return (iPlatform == 4) || (iPlatform == 6) || (iPlatform == 128);
-			}
-		}
-
 		public string SignXml(string xml, Mr mr, string thumbprint)
 		{
 			string signedXml = string.Empty;
 
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				var unixService = new SignServiceUnix(loggerFactory);
 				signedXml = unixService.SignXml(xml, mr, thumbprint);
 			}
 			else
 			{
-
+				var winService = new SignServiceWin(loggerFactory);
+				signedXml = winService.SignXml(xml, mr, thumbprint);
 			}
 
 			return signedXml;
@@ -120,7 +109,7 @@ namespace SignService
 		{
 			X509Certificate2Collection confCertificates = new X509Certificate2Collection();
 
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				log.LogError("GetHashAlg failed. Отсутствует реализация для Unix системы.");
 				throw new Exception("Отсутствует реализация для Unix системы.");
@@ -141,7 +130,7 @@ namespace SignService
 		/// <returns></returns>
 		public bool VerifyDetachedMessage(byte[] sign, byte[] data, bool isCheckTrusted, ref X509Certificate2 certFromSign)
 		{
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				var unixService = new SignServiceUnix(loggerFactory);
 				return unixService.VerifyDetachedMessage(sign, data, isCheckTrusted, ref certFromSign);
@@ -161,7 +150,7 @@ namespace SignService
 		/// <returns></returns>
 		public byte[] Sign(byte[] data, string thumbprint)
 		{
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				var unixService = new SignServiceUnix(loggerFactory);
 				return unixService.Sign(data, thumbprint);
@@ -180,7 +169,7 @@ namespace SignService
 		/// <returns></returns>
 		public IntPtr GetCertificateHandle(string thumbprint)
 		{
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				var unixService = new SignServiceUnix(loggerFactory);
 				return unixService.FindCertificate(thumbprint);
@@ -226,20 +215,18 @@ namespace SignService
 		{
 			string signatureAlgOid = SignServiceUtils.GetSignatureAlg(publicKeyAlg);
 
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				log.LogDebug("Получаем алгоритм хэширования под Unix платформой.");
 
-				var unixService = new SignServiceUnix(loggerFactory);
-				var cryptOidInfo = unixService.GetHashAlg(signatureAlgOid);
+				var cryptOidInfo = SignServiceUnix.GetHashAlg(signatureAlgOid);
 				return cryptOidInfo.Algid;
 			}
 			else
 			{
 				log.LogDebug("Получаем алгоритм хэширования под Windows платформой.");
 
-				var winService = new SignServiceWin(loggerFactory);
-				var cryptOidInfo = winService.GetHashAlg(signatureAlgOid);
+				var cryptOidInfo = SignServiceWin.GetHashAlg(signatureAlgOid);
 				return cryptOidInfo.Algid;
 			}
 		}
@@ -252,7 +239,7 @@ namespace SignService
 		/// <returns></returns>
 		private string GetHashBySigAlgId(Stream data, uint algId)
 		{
-			if (IsUnix)
+			if (SignServiceUtils.IsUnix)
 			{
 				log.LogDebug("Вычисляем хэш под Unix платформой.");
 				var unixService = new SignServiceUnix(loggerFactory);

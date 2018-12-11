@@ -55,12 +55,14 @@ namespace SignService
 		{
 			public static readonly int HashAlgId = 32801;
 			public static readonly int HashSizeValue = 256;
+			public static readonly string HashGost2012_256AlgOid = "";
 		}
 
 		internal static class Gost3411_12_512Consts
 		{
 			public static readonly int HashAlgId = 32802;
 			public static readonly int HashSizeValue = 512;
+			public static readonly string HashGost2012_256AlgOid = "";
 		}
 
 		internal const int GOST341194 = 0x0000801e;
