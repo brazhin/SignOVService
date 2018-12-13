@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Threading;
+using static SignService.CApiExtConst;
 
 namespace SignService.Win.Utils
 {
@@ -59,7 +60,7 @@ namespace SignService.Win.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Завершающий метод формирования хэш
 		/// </summary>
 		/// <param name="hHash"></param>
 		/// <returns></returns>
@@ -81,6 +82,13 @@ namespace SignService.Win.Utils
 			return numArray;
 		}
 
+		/// <summary>
+		/// Метод получения хэндлера криптопровайдера
+		/// </summary>
+		/// <param name="certHandle"></param>
+		/// <param name="keySpec"></param>
+		/// <returns></returns>
+		[SecurityCritical]
 		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
 		{
 			bool bResult = false;
@@ -243,7 +251,7 @@ namespace SignService.Win.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод создания хэш объекта
 		/// </summary>
 		/// <param name="hProv"></param>
 		/// <param name="algid"></param>
@@ -258,7 +266,7 @@ namespace SignService.Win.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получения криптопровайдера
 		/// </summary>
 		/// <param name="parameters"></param>
 		/// <returns></returns>
@@ -277,7 +285,7 @@ namespace SignService.Win.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получения криптопровайдера
 		/// </summary>
 		/// <param name="param"></param>
 		/// <param name="hProv"></param>
@@ -298,7 +306,7 @@ namespace SignService.Win.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получает хэш по заданному алгоритму
 		/// </summary>
 		/// <param name="prov"></param>
 		/// <param name="rgbHash"></param>
@@ -329,6 +337,54 @@ namespace SignService.Win.Utils
 			}
 
 			return invalidHandle;
+		}
+
+		/// <summary>
+		/// Метод проверки открепленной подписи
+		/// </summary>
+		/// <param name="signatureData"></param>
+		/// <param name="messageData"></param>
+		/// <returns></returns>
+		internal static bool VerifySignDetachedMessage(byte[] signatureData, byte[] messageData)
+		{
+			IntPtr messagePtr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(byte)) * messageData.Length);
+			Marshal.Copy(messageData, 0, messagePtr, messageData.Length);
+			IntPtr[] rgpbToBeSigned = new IntPtr[1] { messagePtr };
+			int[] rgcbToBeSigned = new int[1] { messageData.Length };
+			GCHandle pCertContext = GCHandle.Alloc(IntPtr.Zero, GCHandleType.Pinned);
+
+			CRYPT_VERIFY_MESSAGE_PARA verifyParams = new CRYPT_VERIFY_MESSAGE_PARA()
+			{
+				cbSize = (int)Marshal.SizeOf(typeof(CRYPT_VERIFY_MESSAGE_PARA)),
+				dwMsgAndCertEncodingType = PKCS_7_OR_X509_ASN_ENCODING,
+				hCryptProv = 0,
+				pfnGetSignerCertificate = IntPtr.Zero,
+				pvGetArg = IntPtr.Zero
+			};
+
+			try
+			{
+				bool result = CApiExtWin.CryptVerifyDetachedMessageSignature(
+					ref verifyParams, // Verify parameters.
+					0, // Signer index.
+					signatureData, // Buffer for decoded message.
+					signatureData.Length, // Size of buffer.
+					1,
+					rgpbToBeSigned, // Pointer to signed BLOB.
+					rgcbToBeSigned, // Size of signed BLOB.
+					pCertContext.AddrOfPinnedObject()
+				);
+
+				return result;
+			}
+			catch (Exception ex)
+			{
+				throw new CryptographicException($"Ошибка при попытке выполнить проверку открепленной подписи. {ex.Message}.");
+			}
+			finally
+			{
+				pCertContext.Free();
+			}
 		}
 	}
 }

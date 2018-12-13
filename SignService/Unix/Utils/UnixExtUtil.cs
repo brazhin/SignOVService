@@ -252,7 +252,7 @@ namespace SignService.Unix.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получает хэш по заданному алгоритму
 		/// </summary>
 		/// <param name="prov"></param>
 		/// <param name="rgbHash"></param>
@@ -285,6 +285,12 @@ namespace SignService.Unix.Utils
 			return invalidHandle;
 		}
 
+		/// <summary>
+		/// Метод получения хэндлера криптопровайдера
+		/// </summary>
+		/// <param name="certHandle"></param>
+		/// <param name="keySpec"></param>
+		/// <returns></returns>
 		[SecurityCritical]
 		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
 		{
@@ -312,86 +318,53 @@ namespace SignService.Unix.Utils
 			return phProv;
 		}
 
+		/// <summary>
+		/// Метод проверки открепленной подписи
+		/// </summary>
+		/// <param name="signatureData"></param>
+		/// <param name="messageData"></param>
+		/// <returns></returns>
 		[SecurityCritical]
-		internal static int ObjToAlgId(object hashAlg)
+		internal static bool VerifySignDetachedMessage(byte[] signatureData, byte[] messageData)
 		{
-			if (hashAlg == null)
-			{
-				throw new ArgumentNullException("hashAlg");
-			}
+			IntPtr messagePtr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(byte)) * messageData.Length);
+			Marshal.Copy(messageData, 0, messagePtr, messageData.Length);
+			IntPtr[] rgpbToBeSigned = new IntPtr[1] { messagePtr };
+			int[] rgcbToBeSigned = new int[1] { messageData.Length };
+			GCHandle pCertContext = GCHandle.Alloc(IntPtr.Zero, GCHandleType.Pinned);
 
-			string oID = null;
+			CRYPT_VERIFY_MESSAGE_PARA verifyParams = new CRYPT_VERIFY_MESSAGE_PARA()
+			{
+				cbSize = (int)Marshal.SizeOf(typeof(CRYPT_VERIFY_MESSAGE_PARA)),
+				dwMsgAndCertEncodingType = PKCS_7_OR_X509_ASN_ENCODING,
+				hCryptProv = 0,
+				pfnGetSignerCertificate = IntPtr.Zero,
+				pvGetArg = IntPtr.Zero
+			};
 
-			string str = hashAlg as string;
+			try
+			{
+				bool result = CApiExtUnix.CryptVerifyDetachedMessageSignature(
+					ref verifyParams, // Verify parameters.
+					0, // Signer index.
+					signatureData, // Buffer for decoded message.
+					signatureData.Length, // Size of buffer.
+					1,
+					rgpbToBeSigned, // Pointer to signed BLOB.
+					rgcbToBeSigned, // Size of signed BLOB.
+					pCertContext.AddrOfPinnedObject()
+				);
 
-			if (str != null)
-			{
-				oID = CryptoConfig.MapNameToOID(str) ?? str;
+				return result;
 			}
-			else if (hashAlg is Gost2001)
+			catch (Exception ex)
 			{
-				oID = CApiExtConst.Gost3411Consts.HashGost3411AlgOid;
+				throw new CryptographicException($"Ошибка при попытке выполнить проверку открепленной подписи. {ex.Message}.");
 			}
-			else if (hashAlg is Gost2001Unix)
+			finally
 			{
-				oID = CApiExtConst.Gost3411Consts.HashGost3411AlgOid;
+				pCertContext.Free();
 			}
-			else if (hashAlg is Gost2012_256)
-			{
-				oID = CApiExtConst.Gost3411_12_256Consts.HashGost2012_256AlgOid;
-			}
-			else if (hashAlg is Gost2012_256Unix)
-			{
-				oID = CApiExtConst.Gost3411_12_256Consts.HashGost2012_256AlgOid;
-			}
-			else if (hashAlg is HashAlgorithm)
-			{
-				oID = CryptoConfig.MapNameToOID(hashAlg.GetType().ToString());
-			}
-			else if (hashAlg is Type)
-			{
-				oID = CryptoConfig.MapNameToOID(hashAlg.ToString());
-			}
-
-			if (oID == null)
-			{
-				throw new ArgumentException("Argument_InvalidValue");
-			}
-
-			return GetAlgIdFromOid(oID);
-		}
-
-		[SecuritySafeCritical]
-		internal static int GetAlgIdFromOid(string oid)
-		{
-			int result = 0;
-
-			if (string.Equals(oid, "2.16.840.1.101.3.4.2.1", StringComparison.Ordinal))
-			{
-				result = 32780;
-			}
-			if (string.Equals(oid, "2.16.840.1.101.3.4.2.2", StringComparison.Ordinal))
-			{
-				result = 32781;
-			}
-			if (string.Equals(oid, "2.16.840.1.101.3.4.2.3", StringComparison.Ordinal))
-			{
-				result = 32782;
-			}
-			if (string.Equals(oid, Gost3411Consts.HashGost3411AlgOid, StringComparison.Ordinal))
-			{
-				result = Gost3411Consts.HashAlgId;
-			}
-			if (string.Equals(oid, Gost3411_12_256Consts.HashGost2012_256AlgOid, StringComparison.Ordinal))
-			{
-				result = Gost3411_12_256Consts.HashAlgId;
-			}
-			else
-			{
-				result = (int)SignServiceUnix.GetHashAlg(oid).Algid;
-			}
-
-			return result;
 		}
 	}
 }

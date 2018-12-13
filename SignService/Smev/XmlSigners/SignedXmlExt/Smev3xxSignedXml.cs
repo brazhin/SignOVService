@@ -1,20 +1,14 @@
 ﻿using SignService.CommonUtils;
 using SignService.Smev.SmevTransform;
-using SignService.Unix;
-using SignService.Unix.Api;
 using SignService.Unix.Gost;
 using SignService.Unix.Utils;
-using SignService.Win;
-using SignService.Win.Api;
 using SignService.Win.Gost;
 using SignService.Win.Utils;
 using System;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Xml;
-using static SignService.CApiExtConst;
 
 namespace SignService.Smev.XmlSigners.SignedXmlExt
 {
@@ -65,17 +59,13 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 			uint keySpec = CApiExtConst.AT_SIGNATURE;
 			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? UnixExtUtil.GetHandler(certificate, out keySpec) : Win32ExtUtil.GetHandler(certificate, out keySpec);
 
-			byte[] numArray = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) : 
+			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) : 
 				Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
 
-			Array.Reverse(numArray);
+			Array.Reverse(sign);
+			m_signature.SignatureValue = sign;
 
-			m_signature.SignatureValue = numArray;
-
-			if (SignServiceUtils.IsUnix)
-				CApiExtUnix.CryptReleaseContext(cpHandle, 0);
-			else
-				CApiExtWin.CryptReleaseContext(cpHandle, 0);
+			SignServiceUtils.ReleaseProvHandle(cpHandle);
 		}
 
 		/// <summary>

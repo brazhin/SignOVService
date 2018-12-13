@@ -1,13 +1,22 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
+using SignService.Smev.Services;
 using SignService.Smev.SmevTransform;
 using SignService.Smev.Utils;
 using SignService.Smev.XmlSigners.SignedXmlExt;
+using SignService.Unix;
+using SignService.Unix.Api;
+using SignService.Win;
+using SignService.Win.Api;
 using System;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace SignService.Smev.XmlSigners
 {
@@ -31,8 +40,8 @@ namespace SignService.Smev.XmlSigners
 
 		private int idCounter = 1;
 
-		internal SignedTag ElemForSign { get; set; }
-		internal bool SignWithId { get; set; }
+		internal SignedTag ElemForSign { get; set; } = SignedTag.Body;
+		internal bool SignWithId { get; set; } = true;
 		internal Mr MrVersion { get; }
 
 		SignedTag ISignerXml.ElemForSign { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -51,52 +60,229 @@ namespace SignService.Smev.XmlSigners
 		/// <returns></returns>
 		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate)
 		{
-			//TODO: sign attachment
-
-			// Подпись XML
-			Smev3xxSignedXml signedXml = new Smev3xxSignedXml(doc);
-
-			ElemForSign = SignedTag.Smev3TagType;
-			tagForSign = FindSmevTagForSign(doc);
-
-			RemoveCallerInformationSystemSignature(doc.DocumentElement);
-			SetElemId(doc, tagForSign, tagForSignNamespaceUri, SmevMr3xxTags.InformationSystemSignatureId);
-
-			signedXml = (Smev3xxSignedXml)AddReference(doc, signedXml);
-			signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-			signedXml.SignedInfo.SignatureMethod = XmlDsigGost3410_2012_256UrlObsolete;
-
-			KeyInfo keyInfo = new KeyInfo();
-			X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
-
-			keyInfo.AddClause(new KeyInfoX509Data(cert));
-			signedXml.KeyInfo = keyInfo;
-			signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
-
-			XmlElement signatureElem = signedXml.GetXml(xmldsigPrefix);
-			string prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3Types);
-
-			XmlElement sysSignature = null;
-
-			if (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0)
+			try
 			{
-				prefix = string.Empty;
+				// Подписываем вложения
+				log.LogDebug("Пытаемся подписать вложения.");
+				doc = SignAttachmentsOv(doc, certificate);
+				doc.Save("signed.xml");
+			}
+			catch (Exception ex)
+			{
+				log.LogError($"Ошибка при попытке проверить и подписать вложения. {ex.Message}.");
+				throw new CryptographicException("Ошибка при попытке проверить и подписать вложения", ex);
 			}
 
-			if (!string.IsNullOrEmpty(prefix))
+			try
 			{
-				sysSignature = doc.CreateElement(prefix, SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
-				sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+				log.LogDebug("Пытаемся подписать XML.");
+				Smev3xxSignedXml signedXml = new Smev3xxSignedXml(doc);
+
+				ElemForSign = SignedTag.Smev3TagType;
+
+				log.LogDebug($"Пытаемся найти тэг для подписи.");
+				tagForSign = FindSmevTagForSign(doc);
+				log.LogDebug($"Тэг для подписи: {tagForSign}.");
+
+				log.LogDebug("Пытаемся удалить информацию о подписи, если есть.");
+				RemoveCallerInformationSystemSignature(doc.DocumentElement);
+				SetElemId(doc, tagForSign, tagForSignNamespaceUri, SmevMr3xxTags.InformationSystemSignatureId);
+
+				signedXml = (Smev3xxSignedXml)AddReference(doc, signedXml, certificate);
+				signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+
+				log.LogDebug($"Пытаемся получить значение SignatureMethod.");
+				signedXml.SignedInfo.SignatureMethod = SignServiceUtils.GetSignatureMethod(SignServiceUtils.GetAlgId(certificate));
+				log.LogDebug($"Значение SignatureMethod успешно получено: {signedXml.SignedInfo.SignatureMethod}.");
+
+				KeyInfo keyInfo = new KeyInfo();
+
+				log.LogDebug("Пытаемся получить информацию о сертификате.");
+				X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
+				log.LogDebug($"Информация о сертификате успешно получена. Владелец сертификата: {cert.SubjectName}.");
+
+				keyInfo.AddClause(new KeyInfoX509Data(cert));
+				signedXml.KeyInfo = keyInfo;
+
+				log.LogDebug($"Пытаемся вычислить подпись.");
+				signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+				log.LogDebug($"Подпись успешно получена.");
+
+				// Получаем подписанный элемент
+				XmlElement signatureElem = signedXml.GetXml(xmldsigPrefix);
+
+				log.LogDebug("Пытаемся получить значение prefix.");
+				string prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3Types);
+
+				XmlElement sysSignature = null;
+
+				if (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0)
+				{
+					prefix = string.Empty;
+				}
+
+				log.LogDebug($"Значение prefix: {prefix}.");
+
+				if (!string.IsNullOrEmpty(prefix))
+				{
+					sysSignature = doc.CreateElement(prefix, SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
+					sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+				}
+				else
+				{
+					sysSignature = doc.CreateElement("", SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
+					sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+				}
+
+				log.LogDebug("Пытаемся добавить подпись в XML содержимое.");
+				FillSignatureElement(doc, sysSignature, certificate, tagForRequest, tagForRequestNamespaceUri, true);
+				log.LogDebug("Подпись успешно добавлена.");
+
+				SignServiceUtils.FreeHandleCertificate(certificate);
+
+				return doc;
 			}
-			else
+			catch(Exception ex)
 			{
-				sysSignature = doc.CreateElement("", SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
-				sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+				log.LogError($"Ошибка при попытке подписать XML. {ex.Message}.");
+				throw new CryptographicException($"Ошибка при попытке подписать XML. {ex.Message}.");
+			}
+		}
+
+		/// <summary>
+		/// Метод подписания вложений подписью органа власти
+		/// </summary>
+		/// <param name="doc"></param>
+		/// <param name="certificate"></param>
+		/// <returns></returns>
+		private XmlDocument SignAttachmentsOv(XmlDocument doc, IntPtr certificate)
+		{
+			XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+
+			log.LogDebug("Пытаемся получить prefix.");
+			string prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+
+			if (string.IsNullOrEmpty(prefix) || string.Compare(prefix, "xmlns", true) == 0)
+			{
+				prefix = "typesBasic";
 			}
 
-			FillSignatureElement(doc, sysSignature, certificate, tagForRequest, tagForRequestNamespaceUri, true);
+			log.LogDebug($"Полученный prefix: {prefix}.");
+			nsmgr.AddNamespace(prefix, NamespaceUri.Smev3TypesBasic);
+
+			log.LogDebug($"Пытаемся найти тэг заголовка вложений.");
+			string findHeaderString = string.Format("//{0}:AttachmentHeaderList", prefix);
+			XmlElement attachmentHeaderList = doc.SelectSingleNode(findHeaderString, nsmgr) as XmlElement;
+
+			log.LogDebug($"Пытаемся найти тэг с контентом вложений.");
+			string findContentString = string.Format("//{0}:AttachmentContentList", prefix);
+			XmlElement attachmentContentList = doc.SelectSingleNode(findContentString, nsmgr) as XmlElement;
+
+			if (attachmentHeaderList != null && attachmentContentList != null)
+			{
+				log.LogDebug("Список заголовков и контента с вложениями был успешно получен.");
+
+				bool changed = false;
+
+				AttachmentHeaderList headerList = DeserializeXml<AttachmentHeaderList>(attachmentHeaderList, NamespaceUri.Smev3TypesBasic);
+				AttachmentContentList contentList = DeserializeXml<AttachmentContentList>(attachmentContentList, NamespaceUri.Smev3TypesBasic);
+
+				if (headerList != null && headerList.AttachmentHeader != null && headerList.AttachmentHeader.Length > 0
+					&& contentList != null && contentList.AttachmentContent != null && contentList.AttachmentContent.Length > 0)
+				{
+					foreach (AttachmentHeaderType header in headerList.AttachmentHeader)
+					{
+						if (header.SignaturePKCS7 == null || header.SignaturePKCS7.Length == 0)
+						{
+							log.LogDebug($"В заголовке вложения отсутствует подпись. Пытаемся подписать.");
+							AttachmentContentType content = contentList.AttachmentContent.FirstOrDefault(cnt => cnt.Id == header.contentId);
+
+							if (content != null && content.Content != null && content.Content.Length > 0)
+							{
+								byte[] signature = null;
+								if (SignServiceUtils.IsUnix)
+								{
+									log.LogDebug($"Выполняем подпись под Unix платформой.");
+									signature = SignServiceUnix.Sign(content.Content, certificate);
+								}
+								else
+								{
+									log.LogDebug($"Выполняем подпись под Windows платформой.");
+									signature = SignServiceWin.Sign(content.Content, certificate);
+								}
+
+								header.SignaturePKCS7 = signature;
+								changed = true;
+							}
+						}
+					}
+
+					if (changed)
+					{
+						log.LogDebug($"Пытаемся получить значение prefixForSerialize.");
+						string prefixForSerialize = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+
+						if (string.IsNullOrEmpty(prefixForSerialize) || string.Compare(prefixForSerialize, "xmlns", true) == 0)
+						{
+							prefixForSerialize = "";
+						}
+
+						log.LogDebug($"Полученное значение prefixForSerialize: {prefixForSerialize}.");
+
+						log.LogDebug($"Пытаемся обновить список вложений.");
+						XmlElement attachmentHeaderListNew = this.SerializeToXmlElement(headerList, NamespaceUri.Smev3TypesBasic, prefixForSerialize);
+						attachmentHeaderListNew = doc.ImportNode(attachmentHeaderListNew, true) as XmlElement;
+						attachmentHeaderList.ParentNode.ReplaceChild(attachmentHeaderListNew, attachmentHeaderList);
+					}
+				}
+			}
 
 			return doc;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="o"></param>
+		/// <param name="objectnamespace"></param>
+		/// <param name="prefixForSerialize"></param>
+		/// <returns></returns>
+		private XmlElement SerializeToXmlElement(object o, string objectnamespace, string prefixForSerialize)
+		{
+			XmlDocument doc = new XmlDocument();
+
+			XmlSerializerNamespaces xsnss = new XmlSerializerNamespaces();
+			xsnss.Add(prefixForSerialize, objectnamespace);
+
+			using (XmlWriter writer = doc.CreateNavigator().AppendChild())
+			{
+				new XmlSerializer(o.GetType(), objectnamespace).Serialize(writer, o, xsnss);
+			}
+
+			var docElement = doc.DocumentElement;
+
+			for (int i = docElement.Attributes.Count - 1; i >= 0; i--)
+			{
+				XmlAttribute tmpAtt = docElement.Attributes[i];
+
+				if (tmpAtt.LocalName == "xsi" && tmpAtt.Value == "http://www.w3.org/2001/XMLSchema-instance")
+				{
+					docElement.RemoveAttributeAt(i);
+					//docElement.RemoveAttribute(tmpAtt.LocalName, tmpAtt.NamespaceURI);
+				}
+				else if (tmpAtt.LocalName == "xsd" && tmpAtt.Value == "http://www.w3.org/2001/XMLSchema")
+				{
+					docElement.RemoveAttributeAt(i);
+					//docElement.RemoveAttribute(tmpAtt.LocalName, tmpAtt.NamespaceURI);
+				}
+				else if (tmpAtt.LocalName == "xmlns" && string.IsNullOrEmpty(tmpAtt.Value))
+				{
+					docElement.RemoveAttributeAt(i);
+					//docElement.RemoveAttribute(tmpAtt.LocalName, tmpAtt.NamespaceURI);
+				}
+			}
+
+			return docElement;
 		}
 
 		/// <summary>
@@ -130,7 +316,7 @@ namespace SignService.Smev.XmlSigners
 		/// <param name="customNamespace"></param>
 		/// <param name="precedingSibling"></param>
 		/// <returns></returns>
-		private SignedXml AddReference(XmlDocument doc, SignedXml signedXml, string customTag = "", string customNamespace = "", bool precedingSibling = false)
+		private SignedXml AddReference(XmlDocument doc, SignedXml signedXml, IntPtr certificate, string customTag = "", string customNamespace = "", bool precedingSibling = false)
 		{
 			Reference reference = new Reference();
 			string id = string.Empty;
@@ -166,7 +352,9 @@ namespace SignService.Smev.XmlSigners
 				reference.Uri = string.Empty;
 			}
 
-			reference.DigestMethod = XmlDsigGost3410_2012_256UrlObsolete;//XmlDsigGost3411UrlObsolete;
+			log.LogDebug($"Пытаемся получить значение DigestMethod.");
+			reference.DigestMethod = SignServiceUtils.GetDigestMethod(SignServiceUtils.GetAlgId(certificate));
+			log.LogDebug($"Значение DigestMethod успешно получено: {reference.DigestMethod}.");
 
 			if (string.IsNullOrEmpty(customTag) != true && ElemForSign == SignedTag.CustomTag)
 			{
@@ -359,6 +547,50 @@ namespace SignService.Smev.XmlSigners
 					nodeList[i].ParentNode.RemoveChild(nodeList[i]);
 				}
 			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="toDeserialize"></param>
+		/// <param name="xmlns"></param>
+		/// <returns></returns>
+		private T DeserializeXml<T>(XmlElement toDeserialize, string xmlns = null)
+		{
+			if (toDeserialize == null)
+			{
+				return default(T);
+			}
+
+			if (string.IsNullOrEmpty(xmlns))
+			{
+				xmlns = toDeserialize.NamespaceURI;
+			}
+
+			return DeserializeXml<T>(toDeserialize.OuterXml, xmlns);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="toDeserialize"></param>
+		/// <param name="xmlns"></param>
+		/// <returns></returns>
+		private T DeserializeXml<T>(string toDeserialize, string xmlns)
+		{
+			T wrapper = default(T);
+
+			if (string.IsNullOrEmpty(toDeserialize))
+			{
+				return wrapper;
+			}
+
+			XmlSerializer ser = new XmlSerializer(typeof(T), xmlns);
+			wrapper = (T)ser.Deserialize(new StringReader(toDeserialize));
+
+			return wrapper;
 		}
 	}
 }

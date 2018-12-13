@@ -6,6 +6,7 @@ using SignService.Win.Gost;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -161,6 +162,7 @@ namespace SignService.Win
 		/// <param name="messageData"></param>
 		/// <param name="signatureData"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal bool VerifyDetachedMessage(byte[] signatureData, byte[] messageData, bool isCheckTrusted, ref X509Certificate2 certFromSign)
 		{
 			log.LogDebug("Запущен метод проверки открепленной подписи под Windows платформой.");
@@ -267,6 +269,7 @@ namespace SignService.Win
 		/// </summary>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal IntPtr FindCertificate(string thumbprint)
 		{
 			using(var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -291,11 +294,9 @@ namespace SignService.Win
 		/// <param name="data"></param>
 		/// <param name="hCert"></param>
 		/// <returns></returns>
-		private byte[] Sign(byte[] data, IntPtr hCert)
+		[SecurityCritical]
+		internal static byte[] Sign(byte[] data, IntPtr hCert)
 		{
-			log.LogDebug("Пытаемся выполнить метод подписи данных.");
-			log.LogDebug("Заполняем структуру данных содержащую основные параметры необходимые для подписи.");
-
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
 			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
 			{
@@ -313,22 +314,14 @@ namespace SignService.Win
 				cMsgCert = 1
 			};
 
-			log.LogDebug($"Пытаемся получить информацию о сертификате.");
-
 			CApiExtConst.CERT_CONTEXT contextCert = Marshal.PtrToStructure<CApiExtConst.CERT_CONTEXT>(hCert);
 			CApiExtConst.CERT_INFO certInfo = Marshal.PtrToStructure<CApiExtConst.CERT_INFO>(contextCert.pCertInfo);
-
-			log.LogDebug("Информация о сертификате успешно получена.");
-			log.LogDebug("Пытаемся получить информацию об алгоритме хэширования.");
 
 			var signatureAlg = SignServiceUtils.GetSignatureAlg(certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId);
 			var cryptOidInfo = GetHashAlg(signatureAlg);
 
 			//Содержащий алгоритм хеширования, используемый для хеширования данных, подлежащих подписке.
 			pParams.HashAlgorithm.pszObjId = cryptOidInfo.pszOID;
-
-
-			log.LogDebug($"Информацию об алгоритме хэширования успешно получена. HashAlgorithm.pszObjId == {pParams.HashAlgorithm.pszObjId}.");
 
 			// Массив указателей на буферы, содержащие содержимое, подлежащее подписке.
 			IntPtr rgpbToBeSigned = Marshal.AllocHGlobal(data.Length);
@@ -359,26 +352,19 @@ namespace SignService.Win
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
 
-				log.LogDebug("Пытаемся получить размер для буфера содержащего массив байт подписи.");
-
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
 				if (!CApiExtWin.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при подписании данных. Метод CryptSignMessage вернул false.");
+					throw new CryptographicException($"Ошибка при подписании данных. Первый вызов CryptSignMessage вернул false. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
 
-				log.LogDebug($"Размер для буфера содержащего массив байт подписи успешно получен. Размер: {signArrayLength}.");
 				signArray = new byte[signArrayLength];
-
-				log.LogDebug("Пытаемся подписать данные.");
 
 				if (!CApiExtWin.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при подписании данных. Метод CryptSignMessage вернул false.");
+					throw new CryptographicException($"Ошибка при подписании данных. Второй вызов CryptSignMessage вернул false. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
-
-				log.LogDebug("Данные успешно подписаны. Возвращаем подпись в виде массива байт.");
 
 				return signArray;
 			}

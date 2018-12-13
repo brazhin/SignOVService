@@ -3,7 +3,6 @@ using SignService.CommonUtils;
 using SignService.Unix;
 using SignService.Win;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -31,11 +30,13 @@ namespace SignService
 
 			if (SignServiceUtils.IsUnix)
 			{
+				log.LogDebug($"Попытка выполнить метод подписания XML под Unix платформой.");
 				var unixService = new SignServiceUnix(loggerFactory);
 				signedXml = unixService.SignXml(xml, mr, thumbprint);
 			}
 			else
 			{
+				log.LogDebug($"Попытка выполнить метод подписания XML под Windows платформой.");
 				var winService = new SignServiceWin(loggerFactory);
 				signedXml = winService.SignXml(xml, mr, thumbprint);
 			}

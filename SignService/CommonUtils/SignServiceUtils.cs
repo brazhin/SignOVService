@@ -1,10 +1,13 @@
 ﻿using SignService.Unix;
+using SignService.Unix.Api;
 using SignService.Unix.Gost;
 using SignService.Win;
+using SignService.Win.Api;
 using SignService.Win.Gost;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -46,6 +49,24 @@ namespace SignService.CommonUtils
 		};
 
 		/// <summary>
+		/// Значения алгоритмов подписи для XML
+		/// </summary>
+		private static readonly Dictionary<int, string> signatureMethods = new Dictionary<int, string>
+		{
+			{ 32798, "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411"}, //ГОСТ 2001
+			{ 32801, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34102012-gostr34112012-256"} //ГОСТ 2012
+		};
+
+		/// <summary>
+		/// Значения алгоритмов подписи для XML
+		/// </summary>
+		private static readonly Dictionary<int, string> digestMethods = new Dictionary<int, string>
+		{
+			{ 32798, "http://www.w3.org/2001/04/xmldsig-more#gostr3411"}, //ГОСТ 2001
+			{ 32801, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256"} //ГОСТ 2012
+		};
+
+		/// <summary>
 		/// Свойство определяет тип платформы
 		/// </summary>
 		internal static bool IsUnix
@@ -62,6 +83,7 @@ namespace SignService.CommonUtils
 		/// </summary>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal static HashAlgorithm GetHashAlgObject(IntPtr certificate, ref int algId)
 		{
 			var certContext = Marshal.PtrToStructure<CERT_CONTEXT>(certificate);
@@ -108,10 +130,45 @@ namespace SignService.CommonUtils
 		}
 
 		/// <summary>
+		/// Метолучения алгоритма ГОСТ
+		/// </summary>
+		/// <param name="certHandle"></param>
+		/// <returns></returns>
+		[SecurityCritical]
+		internal static int GetAlgId(IntPtr certHandle)
+		{
+			try
+			{
+				var certContext = Marshal.PtrToStructure<CERT_CONTEXT>(certHandle);
+				var certInfo = Marshal.PtrToStructure<CERT_INFO>(certContext.pCertInfo);
+				var publicKeyAlg = certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId;
+				string signatureAlgOid = GetSignatureAlg(publicKeyAlg);
+
+				CRYPT_OID_INFO oidInfo = new CRYPT_OID_INFO();
+
+				if (IsUnix)
+				{
+					oidInfo = SignServiceUnix.GetHashAlg(signatureAlgOid);
+				}
+				else
+				{
+					oidInfo = SignServiceWin.GetHashAlg(signatureAlgOid);
+				}
+
+				return (int)oidInfo.Algid;
+			}
+			catch(Exception ex)
+			{
+				throw new CryptographicException($"Ошибка при получении хэш алгоритма ГОСТ. {ex.Message}.");
+			}
+		}
+
+		/// <summary>
 		/// Метод преобразует хэндлер сертификата в объект X509Certificate2 под каждую платформу
 		/// </summary>
 		/// <param name="certHandle"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal static X509Certificate2 GetX509Certificate2(IntPtr certHandle)
 		{
 			if (IsUnix)
@@ -126,6 +183,52 @@ namespace SignService.CommonUtils
 			{
 				return new X509Certificate2(certHandle);
 			}
+		}
+
+		/// <summary>
+		/// Метод освобождаем контекст сертификата
+		/// </summary>
+		/// <param name="certHandle"></param>
+		[SecurityCritical]
+		internal static void FreeHandleCertificate(IntPtr certHandle)
+		{
+			if (IsUnix)
+				CApiExtUnix.CertFreeCertificateContext(certHandle);
+			else
+				CApiExtWin.CertFreeCertificateContext(certHandle);
+		}
+
+		/// <summary>
+		/// Метод освобождает контекст сертификата
+		/// </summary>
+		/// <param name="provHandle"></param>
+		[SecurityCritical]
+		internal static void ReleaseProvHandle(IntPtr provHandle)
+		{
+			if (SignServiceUtils.IsUnix)
+				CApiExtUnix.CryptReleaseContext(provHandle, 0);
+			else
+				CApiExtWin.CryptReleaseContext(provHandle, 0);
+		}
+
+		/// <summary>
+		/// Метод получения константы для метода подписи в XML
+		/// </summary>
+		/// <param name="algId"></param>
+		/// <returns></returns>
+		internal static string GetSignatureMethod(int algId)
+		{
+			return signatureMethods[algId];
+		}
+
+		/// <summary>
+		/// Метод получения константы для цифровго метода
+		/// </summary>
+		/// <param name="algId"></param>
+		/// <returns></returns>
+		internal static string GetDigestMethod(int algId)
+		{
+			return digestMethods[algId];
 		}
 
 		/// <summary>
