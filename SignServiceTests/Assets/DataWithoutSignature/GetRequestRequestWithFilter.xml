@@ -1,0 +1,12 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="urn://x-artefacts-smev-gov-ru/services/message-exchange/types/1.1" xmlns:ns1="urn://x-artefacts-smev-gov-ru/services/message-exchange/types/basic/1.1">
+	<soapenv:Header/>
+	<soapenv:Body>
+		<ns:GetRequestRequest>
+			<ns2:MessageTypeSelector xmlns:ns2="urn://x-artefacts-smev-gov-ru/services/message-exchange/types/basic/1.1" xmlns="urn://x-artefacts-smev-gov-ru/services/message-exchange/types/1.1" Id="SIGNED_BY_CALLER">
+				<ns2:NamespaceURI>urn://x-artefacts-gibdd-gov-ru/breach/root/1.0</ns2:NamespaceURI>
+				<ns2:RootElementLocalName>BreachRequest</ns2:RootElementLocalName>
+				<ns2:Timestamp>2014-02-11T17:10:03.616+04:00</ns2:Timestamp>
+			</ns2:MessageTypeSelector>
+		</ns:GetRequestRequest>
+	</soapenv:Body>
+</soapenv:Envelope>

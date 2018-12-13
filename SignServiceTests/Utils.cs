@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace SignServiceTests
@@ -19,6 +21,14 @@ namespace SignServiceTests
 			var text = File.ReadAllText(Path.Combine(path, fileName));
 
 			return text;
+		}
+
+		public static List<string> GetFilesList(string directory)
+		{
+			var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Assets", directory);
+			DirectoryInfo dir = new DirectoryInfo(path);
+			var fileNames = dir.GetFiles().Select(x => x.FullName);
+			return fileNames.ToList();
 		}
 	}
 }
