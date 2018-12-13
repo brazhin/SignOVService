@@ -2,10 +2,11 @@
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SignOVService.Model;
 using SignOVService.Model.Cryptography;
 using SignService;
 
@@ -19,25 +20,6 @@ namespace SignOVService.Controllers
 		public TestsController(ILoggerFactory logggerFactory, SignServiceProvider provider)
 		{
 			this.provider = provider;
-		}
-
-		[HttpGet]
-		public IActionResult GetProvider()
-		{
-			try
-			{
-				IntPtr provider = IntPtr.Zero;
-				provider = CryptoProvider.TryGetGostProvider();
-
-				if (provider == IntPtr.Zero || provider == null)
-					return BadRequest("Не удалось найти провайдер для работы с алгоритмами ГОСТ.");
-
-				return Ok();
-			}
-			catch(Exception ex)
-			{
-				return BadRequest($"Internal Server Error: {ex.Message}.");
-			}
 		}
 
 		/// <summary>
@@ -72,7 +54,7 @@ namespace SignOVService.Controllers
 			}
 			catch (Exception ex)
 			{
-				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
 			}
 		}
 
@@ -119,7 +101,7 @@ namespace SignOVService.Controllers
 			}
 			catch(Exception ex)
 			{
-				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
 			}
 		}
 
@@ -158,7 +140,62 @@ namespace SignOVService.Controllers
 			}
 			catch (Exception ex)
 			{
-				return BadRequest($"Ошибка при выполнении метода: {ex.Message}.");
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
+			}
+		}
+
+		/// <summary>
+		/// Метод подписи xml
+		/// </summary>
+		/// <param name=""></param>
+		/// <returns></returns>
+		[HttpPost("signxml")]
+		public IActionResult SignXml([FromBody] RequestSignOV request)
+		{
+			try
+			{
+				var signedXml = provider.SignXml(request.Soap, request.Mr, request.Thumbprint);
+				return Ok(signedXml);
+			}
+			catch(Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
+			}
+		}
+
+		/// <summary>
+		/// Метод подписи xml
+		/// </summary>
+		/// <param name=""></param>
+		/// <returns></returns>
+		[HttpPost("signxmlfile")]
+		public IActionResult SignXml()
+		{
+			try
+			{
+				if (HttpContext.Request.Form.Files.Count <= 0)
+					return BadRequest("Файлов для подписания не обнаружено.");
+
+				var form = HttpContext.Request.Form;
+				var file = HttpContext.Request.Form.Files[0];
+
+				var mr = Int32.Parse(form["Mr"]);
+				var thumbprint = form["Thumbprint"];
+
+				string xml = string.Empty;
+				using (var stream = file.OpenReadStream())
+				{
+					var body = new byte[stream.Length];
+					stream.Read(body, 0, body.Length);
+					xml = Encoding.UTF8.GetString(body);
+				}
+
+				var signedXml = provider.SignXml(xml, (Mr)mr, thumbprint);
+				return Ok(signedXml);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
 			}
 		}
 	}
