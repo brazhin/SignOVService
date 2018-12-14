@@ -5,9 +5,7 @@ using SignService.Smev.SmevTransform;
 using SignService.Smev.Utils;
 using SignService.Smev.XmlSigners.SignedXmlExt;
 using SignService.Unix;
-using SignService.Unix.Api;
 using SignService.Win;
-using SignService.Win.Api;
 using System;
 using System.Globalization;
 using System.IO;
@@ -20,14 +18,12 @@ using System.Xml.Serialization;
 
 namespace SignService.Smev.XmlSigners
 {
+	/// <summary>
+	/// Реализация подписи XML для СМЭВ3 по схеме 1.1
+	/// </summary>
 	internal class SignerXml3XX : ISignerXml
 	{
 		private readonly ILogger<SignerXml3XX> log;
-
-		private const string XmlDsigGost3410UrlObsolete =  "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411";
-		private const string XmlDsigGost3410_2012_256UrlObsolete = "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256";
-		private const string XmlDsigGost3411UrlObsolete = "http://www.w3.org/2001/04/xmldsig-more#gostr3411";
-		private const string XmlDsigSha1UrlObsolete = "http://www.w3.org/2000/09/xmldsig#sha1";
 		private const string xmldsigPrefix = "ds";
 
 		private readonly string mrNamespace;
@@ -42,7 +38,7 @@ namespace SignService.Smev.XmlSigners
 
 		internal SignedTag ElemForSign { get; set; } = SignedTag.Body;
 		internal bool SignWithId { get; set; } = true;
-		internal Mr MrVersion { get; }
+		internal Mr MrVersion { get; } = Mr.MR300;
 
 		SignedTag ISignerXml.ElemForSign { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 		bool ISignerXml.SignWithId { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -70,11 +66,12 @@ namespace SignService.Smev.XmlSigners
 			catch (Exception ex)
 			{
 				log.LogError($"Ошибка при попытке проверить и подписать вложения. {ex.Message}.");
-				throw new CryptographicException("Ошибка при попытке проверить и подписать вложения", ex);
+				throw new CryptographicException($"Ошибка при попытке проверить и подписать вложения. {ex.Message}");
 			}
 
 			try
 			{
+				// Подписываем XML
 				log.LogDebug("Пытаемся подписать XML.");
 				Smev3xxSignedXml signedXml = new Smev3xxSignedXml(doc);
 
@@ -185,10 +182,52 @@ namespace SignService.Smev.XmlSigners
 				bool changed = false;
 
 				AttachmentHeaderList headerList = DeserializeXml<AttachmentHeaderList>(attachmentHeaderList, NamespaceUri.Smev3TypesBasic);
-				AttachmentContentList contentList = DeserializeXml<AttachmentContentList>(attachmentContentList, NamespaceUri.Smev3TypesBasic);
 
-				if (headerList != null && headerList.AttachmentHeader != null && headerList.AttachmentHeader.Length > 0
-					&& contentList != null && contentList.AttachmentContent != null && contentList.AttachmentContent.Length > 0)
+				// Если нет информации о вложениях
+				if(headerList == null || headerList.AttachmentHeader == null || headerList.AttachmentHeader.Length <= 0)
+				{
+					log.LogDebug("Вложения для подписи не найдены.");
+					return doc;
+				}
+
+				// Проверим есть ли вложения для которых необходима подпись
+				log.LogDebug("Проверим есть ли вложения для которых необходима подпись.");
+
+				var needSigned = false;
+				foreach (var header in headerList.AttachmentHeader)
+				{
+					if(header.SignaturePKCS7 == null || header.SignaturePKCS7.Length <= 0)
+					{
+						log.LogDebug($"Вложение {header.contentId} нуждается в подписи.");
+						needSigned = true;
+						break;
+					}
+				}
+
+				// Если все вложения уже подписаны, выходим
+				if (!needSigned)
+				{
+					log.LogDebug("Все вложения являются подписанными.");
+					return doc;
+				}
+
+				// Пытаемся получить список контента вложений. Обрабатывает только вложения указанные в XML в виде base64 строки, для случаев с
+				// расположением вложения на FTP или в случае если данный XML является частью МТОМ запроса предполагается что вложения были подписаны отдельно, заранее
+				AttachmentContentList contentList = null;
+
+				try
+				{
+					contentList = DeserializeXml<AttachmentContentList>(attachmentContentList, NamespaceUri.Smev3TypesBasic);
+				}
+				catch(Exception ex)
+				{
+					log.LogError($"Ошибка при десериализации контента вложений. {ex.Message}.");
+					throw new CryptographicException($"Ошибка при десериализации контента вложений. " +
+						$"Убедитесь, что для вложений, которые находятся на FTP, или будут расположены в МТОМ запросе подпись была получена отдельно. " +
+						$"Содержимое ошибки {ex.Message}.");
+				}
+
+				if (contentList != null && contentList.AttachmentContent != null && contentList.AttachmentContent.Length > 0)
 				{
 					foreach (AttachmentHeaderType header in headerList.AttachmentHeader)
 					{
@@ -241,7 +280,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Метод сериализации XML элемента, используется для обновления списка вложений
 		/// </summary>
 		/// <param name="o"></param>
 		/// <param name="objectnamespace"></param>
@@ -308,7 +347,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Метод добавляет в XML тэг <ds:Reference></Reference>
 		/// </summary>
 		/// <param name="doc"></param>
 		/// <param name="signedXml"></param>
@@ -365,11 +404,8 @@ namespace SignService.Smev.XmlSigners
 			XmlDsigExcC14NTransform c14 = new XmlDsigExcC14NTransform();
 			reference.AddTransform(c14);
 
-			//if (MrVersion == Mr.MR300)
-			//{
-				SmevTransformAlg smevTransform = new SmevTransformAlg();
-				reference.AddTransform(smevTransform);
-			//}
+			SmevTransformAlg smevTransform = new SmevTransformAlg();
+			reference.AddTransform(smevTransform);
 
 			signedXml.AddReference(reference);
 
@@ -377,7 +413,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Устанавливает значение для тэга с идентификатором, влияет на установку <ds:Reference URI=></Reference>
 		/// </summary>
 		/// <param name="doc"></param>
 		/// <param name="elemName"></param>
@@ -423,7 +459,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получает тэг по идентификатору, влияет на установку <ds:Reference URI=></Reference>
 		/// </summary>
 		/// <param name="doc"></param>
 		/// <param name="elemName"></param>
@@ -550,7 +586,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Метод запускает процесс десериализации для XML содержимого описывающего вложения
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="toDeserialize"></param>
@@ -572,7 +608,7 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
-		/// 
+		/// Метод десериализует XML содержимое описывающее вложения в объекты вида AttachmentHeaderList/AttachmentContentList
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="toDeserialize"></param>
@@ -588,7 +624,8 @@ namespace SignService.Smev.XmlSigners
 			}
 
 			XmlSerializer ser = new XmlSerializer(typeof(T), xmlns);
-			wrapper = (T)ser.Deserialize(new StringReader(toDeserialize));
+			var reader = new StringReader(toDeserialize);
+			wrapper = (T)ser.Deserialize(reader);
 
 			return wrapper;
 		}
