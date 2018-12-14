@@ -24,6 +24,13 @@ namespace SignService
 			this.log = loggerFactory.CreateLogger<SignServiceProvider>();
 		}
 
+		/// <summary>
+		/// Метод подписи XML
+		/// </summary>
+		/// <param name="xml"></param>
+		/// <param name="mr"></param>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
 		public string SignXml(string xml, Mr mr, string thumbprint)
 		{
 			string signedXml = string.Empty;
@@ -112,7 +119,7 @@ namespace SignService
 
 			if (SignServiceUtils.IsUnix)
 			{
-				log.LogError("GetHashAlg failed. Отсутствует реализация для Unix системы.");
+				log.LogError("GetTrustedCertificates failed. Отсутствует реализация для Unix системы.");
 				throw new Exception("Отсутствует реализация для Unix системы.");
 			}
 			else
@@ -133,11 +140,13 @@ namespace SignService
 		{
 			if (SignServiceUtils.IsUnix)
 			{
+				log.LogDebug("Выполняем проверку открепленной подписи под Unix платформой.");
 				var unixService = new SignServiceUnix(loggerFactory);
 				return unixService.VerifyDetachedMessage(sign, data, isCheckTrusted, ref certFromSign);
 			}
 			else
 			{
+				log.LogDebug("Выполняем проверку открепленной подписи под Windows платформой.");
 				var winService = new SignServiceWin(loggerFactory);
 				return winService.VerifyDetachedMessage(sign, data, isCheckTrusted, ref certFromSign);
 			}

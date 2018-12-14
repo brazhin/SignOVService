@@ -3,8 +3,14 @@ using System.Runtime.InteropServices;
 
 namespace SignService
 {
+	/// <summary>
+	/// Класс обертка для используемых констант и структур данных
+	/// </summary>
 	internal class CApiExtConst
 	{
+		/// <summary>
+		/// Параметры необходимые для метода формирования открепленной подписи
+		/// </summary>
 		[StructLayout(LayoutKind.Sequential)]
 		internal struct CRYPT_SIGN_MESSAGE_PARA
 		{
@@ -27,6 +33,9 @@ namespace SignService
 			internal IntPtr pvHashEncryptionAuxInfo;
 		}
 
+		/// <summary>
+		/// Структура используемая для формирования фильтра поиска сертификата
+		/// </summary>
 		[StructLayout(LayoutKind.Sequential)]
 		internal struct CRYPT_HASH_BLOB
 		{
@@ -34,8 +43,11 @@ namespace SignService
 			public IntPtr pbData;
 		}
 
+		/// <summary>
+		/// Структура необходимая для проверки валидности открепленной подписи
+		/// </summary>
 		[StructLayout(LayoutKind.Sequential)]
-		public struct CRYPT_VERIFY_MESSAGE_PARA
+		internal struct CRYPT_VERIFY_MESSAGE_PARA
 		{
 			public int cbSize;
 			public uint dwMsgAndCertEncodingType;
@@ -44,30 +56,42 @@ namespace SignService
 			public IntPtr pvGetArg;
 		}
 
+		/// <summary>
+		/// Константы для ГОСТ 2001
+		/// </summary>
 		internal static class Gost3411Consts
 		{
-			public static readonly int HashAlgId = 32798;
-			public static readonly int HashSizeValue = 256;
-			public static readonly string HashGost3411AlgOid = "1.3.6.1.4.1.4929.2.20";
+			internal static readonly int HashAlgId = 32798;
+			internal static readonly int HashSizeValue = 256;
+			internal static readonly string HashGost3411AlgOid = "1.3.6.1.4.1.4929.2.20";
 		}
 
+		/// <summary>
+		/// Константы для ГОСТ 2012-256
+		/// </summary>
 		internal static class Gost3411_12_256Consts
 		{
-			public static readonly int HashAlgId = 32801;
-			public static readonly int HashSizeValue = 256;
-			public static readonly string HashGost2012_256AlgOid = "";
+			internal static readonly int HashAlgId = 32801;
+			internal static readonly int HashSizeValue = 256;
+			internal static readonly string HashGost2012_256AlgOid = "";
 		}
 
+		/// <summary>
+		/// Константы для ГОСТ 2012-512 (не поддерживается)
+		/// </summary>
 		internal static class Gost3411_12_512Consts
 		{
-			public static readonly int HashAlgId = 32802;
-			public static readonly int HashSizeValue = 512;
-			public static readonly string HashGost2012_256AlgOid = "";
+			internal static readonly int HashAlgId = 32802;
+			internal static readonly int HashSizeValue = 512;
+			internal static readonly string HashGost2012_256AlgOid = "";
 		}
 
-		internal const int GOST341194 = 0x0000801e;
-		internal const int GOST2012_256 = 0x00008021;
-		internal const int GOST2012_512 = 0x00008022;
+		/// <summary>
+		/// Значение алгоритмов хэширования для разных ГОСТ
+		/// </summary>
+		internal const int GOST341194 = 0x0000801e; // 32798
+		internal const int GOST2012_256 = 0x00008021; // 32801
+		internal const int GOST2012_512 = 0x00008022; // 32802 (не поддерживается)
 
 		/* CRYPT_HASH_ALG_OID_GROUP_ID */
 		internal const string szOID_CP_GOST_R3411 = "1.2.643.2.2.9";
@@ -216,6 +240,7 @@ namespace SignService
 		internal const uint CERT_STORE_PROV_SYSTEM_W = 10;
 		internal const uint CERT_STORE_PROV_SYSTEM = CERT_STORE_PROV_SYSTEM_A;
 
+		// Значение для хранилища сертификатов, указывает на хранилище текущего пользователя
 		internal const int CURRENT_USER = 65536;
 
 		internal const uint AT_KEYEXCHANGE = 1;

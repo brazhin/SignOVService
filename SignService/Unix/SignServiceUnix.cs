@@ -419,14 +419,14 @@ namespace SignService.Unix
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
 				if (!CApiExtUnix.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при подписании данных. Метод CryptSignMessage вернул false.");
+					throw new CryptographicException("Ошибка при попытке подписать данные. Не удалось вычислить размер буфера для подписи.");
 				}
 
 				signArray = new byte[signArrayLength];
 
 				if (!CApiExtUnix.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при подписании данных. Метод CryptSignMessage вернул false.");
+					throw new CryptographicException("Ошибка при попытке подписать данные. Не удалось вычислить подпись.");
 				}
 
 				return signArray;
