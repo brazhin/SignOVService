@@ -32,6 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SignService\SignService.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Model\Smev\Sign\NamespaceUri.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
