@@ -11,9 +11,9 @@ namespace SignService.Smev.XmlSigners
 		internal static ISignerXml CreateSigner(Mr mr, ILoggerFactory loggerFactory)
 		{
 			if (mr == Mr.MR244)
-				throw new Exception($"Отсутствует реализация для МР244.");
+				return new SignerXml2XX(Mr.MR244, loggerFactory);
 			else if (mr == Mr.MR255)
-				throw new Exception($"Отсутствует реализация для МР255.");
+				return new SignerXml2XX(Mr.MR255, loggerFactory);
 			else if (mr == Mr.MR300)
 				return new SignerXml3XX(loggerFactory);
 			else

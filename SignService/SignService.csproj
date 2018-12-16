@@ -21,6 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Smev\SmevAttributes.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SmevAttributes.resx</DependentUpon>
+    </Compile>
     <Compile Update="Smev\XmlSigners\SignedXmlExt\NamespaceUri.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -29,6 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Smev\SmevAttributes.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>SmevAttributes.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Smev\XmlSigners\SignedXmlExt\NamespaceUri.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>NamespaceUri.Designer.cs</LastGenOutput>
