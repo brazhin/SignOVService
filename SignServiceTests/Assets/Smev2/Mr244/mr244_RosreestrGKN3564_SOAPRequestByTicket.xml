@@ -1,0 +1,56 @@
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"><s:Header><wsse:Security xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" soap:actor="http://smev.gosuslugi.ru/actors/smev"><wsse:BinarySecurityToken xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" u:Id="31252f23-1827-4189-a6b2-0d0a8a8466b8" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">MIIJlTCCCUSgAwIBAgIKev08CwAAAAAQtzAIBgYqhQMCAgMwggGyMRgwFgYFKoUD
+ZAESDTEwMjMxMDE2NzA0MzcxGjAYBggqhQMDgQMBARIMMDAzMTIzMDc3MTExMSUw
+IwYJKoZIhvcNAQkBFhZzZXJ2aWNldWNAYmVscmVnaW9uLnJ1MQswCQYDVQQGEwJS
+VTEgMB4GA1UECQwX0J3QtdC60YDQsNGB0L7QstCwIDktMTUxMzAxBgNVBAgMKjMx
+INCR0LXQu9Cz0L7RgNC+0LTRgdC60LDRjyDQvtCx0LvQsNGB0YLRjDEZMBcGA1UE
+BwwQ0JHQtdC70LPQvtGA0L7QtDFQME4GA1UECgxH0J7Qk9CR0KMg0JHQtdC70LPQ
+vtGA0L7QtNGB0LrQuNC5INC40L3RhNC+0YDQvNCw0YbQuNC+0L3QvdGL0Lkg0YTQ
+vtC90LQxMDAuBgNVBAsMJ9Cj0LTQvtGB0YLQvtCy0LXRgNGP0Y7RidC40Lkg0YbQ
+tdC90YLRgDFQME4GA1UEAwxH0KPQpiDQkNC00LzQuNC90LjRgdGC0YDQsNGG0LjQ
+uCDQkdC10LvQs9C+0YDQvtC00YHQutC+0Lkg0L7QsdC70LDRgdGC0LgwHhcNMTQx
+MjA0MTIwNTAwWhcNMTUxMjA0MTIwNjAwWjCCAYUxGDAWBgUqhQNkARINMTA4MzEy
+NzAwMDA5ODEaMBgGCCqFAwOBAwEBEgwwMDMxMjcwMDQxMDcxIDAeBgkqhkiG9w0B
+CQEWEWt1bXMtYWdnb0BtYWlsLnJ1MQswCQYDVQQGEwJSVTE3MDUGA1UECB4uADMA
+MQAgBBEENQQ7BDMEPgRABD4ENARBBDoEMARPACAEPgQxBDsEMARBBEIETDEVMBMG
+A1UEBx4MBBMEQwQxBDoEOAQ9MV8wXQYDVQQKHlYEEAQ0BDwEOAQ9BDgEQQRCBEAE
+MARGBDgETwAgBBMEQwQxBDoEOAQ9BEEEOgQ+BDMEPgAgBDMEPgRABD4ENARBBDoE
+PgQzBD4AIAQ+BDoEQARDBDMEMDFtMGsGA1UEAx5kBBoEPgQ8BDgEQgQ1BEIAIAQ/
+BD4AIARDBD8EQAQwBDIEOwQ1BD0EOAROACAEPARDBD0EOARGBDgEPwQwBDsETAQ9
+BD4EOQAgBEEEPgQxBEEEQgQyBDUEPQQ9BD4EQQRCBEwETjBjMBwGBiqFAwICEzAS
+BgcqhQMCAiQABgcqhQMCAh4BA0MABEBkCCcTRwbFgMc5Ha+mpR4GsABMWFUC6orN
+NyekjpPyYqanvrLO9JzdOmO7yr/PNK2Lf6hozT4G7gnB+eH57Y3Mo4IFYTCCBV0w
+DgYDVR0PAQH/BAQDAgTwMBkGCSqGSIb3DQEJDwQMMAowCAYGKoUDAgIVMDcGA1Ud
+JQQwMC4GBiqFA2QCAgYHKoUDAgIiGQYHKoUDAgIiBgYIKwYBBQUHAwIGCCsGAQUF
+BwMEMB0GA1UdDgQWBBTMm03IV92FZ/LPO22m6TpX+qIUejCCAfMGA1UdIwSCAeow
+ggHmgBR9toFa+v5IKpskHLMkq2CLRoevYKGCAbqkggG2MIIBsjEYMBYGBSqFA2QB
+Eg0xMDIzMTAxNjcwNDM3MRowGAYIKoUDA4EDAQESDDAwMzEyMzA3NzExMTElMCMG
+CSqGSIb3DQEJARYWc2VydmljZXVjQGJlbHJlZ2lvbi5ydTELMAkGA1UEBhMCUlUx
+IDAeBgNVBAkMF9Cd0LXQutGA0LDRgdC+0LLQsCA5LTE1MTMwMQYDVQQIDCozMSDQ
+kdC10LvQs9C+0YDQvtC00YHQutCw0Y8g0L7QsdC70LDRgdGC0YwxGTAXBgNVBAcM
+ENCR0LXQu9Cz0L7RgNC+0LQxUDBOBgNVBAoMR9Ce0JPQkdCjINCR0LXQu9Cz0L7R
+gNC+0LTRgdC60LjQuSDQuNC90YTQvtGA0LzQsNGG0LjQvtC90L3Ri9C5INGE0L7Q
+vdC0MTAwLgYDVQQLDCfQo9C00L7RgdGC0L7QstC10YDRj9GO0YnQuNC5INGG0LXQ
+vdGC0YAxUDBOBgNVBAMMR9Cj0KYg0JDQtNC80LjQvdC40YHRgtGA0LDRhtC40Lgg
+0JHQtdC70LPQvtGA0L7QtNGB0LrQvtC5INC+0LHQu9Cw0YHRgtC4ghBIcK5n44+R
+qURFNl5e2cMpMIGxBgNVHR8EgakwgaYwUqBQoE6GTGh0dHA6Ly91Y2JvLmJlbHJl
+Z2lvbi5ydS9jYS9jZHAvN2RiNjgxNWFmYWZlNDgyYTliMjQxY2IzMjRhYjYwOGI0
+Njg3YWY2MC5jcmwwUKBOoEyGSmh0dHA6Ly91Yy5iZWxyZWdpb24ucnUvY2EvY2Rw
+LzdkYjY4MTVhZmFmZTQ4MmE5YjI0MWNiMzI0YWI2MDhiNDY4N2FmNjAuY3JsMHgG
+CCsGAQUFBwEBBGwwajAyBggrBgEFBQcwAYYmaHR0cDovL3VjYm8uYmVscmVnaW9u
+LnJ1L29jc3Avb2NzcC5zcmYwNAYIKwYBBQUHMAKGKGh0dHA6Ly91Y2JvLmJlbHJl
+Z2lvbi5ydS9jYS9jZHAvcm9vdC5jcnQwNAYFKoUDZG8EKwwp0JrRgNC40L/RgtC+
+0J/RgNC+IENTUCAo0LLQtdGA0YHQuNGPIDMuNikwHQYDVR0gBBYwFDAIBgYqhQNk
+cQEwCAYGKoUDZHECMCsGA1UdEAQkMCKADzIwMTQxMjA0MTIwNTAwWoEPMjAxNTEy
+MDQxMjA1MDBaMIIBLwYFKoUDZHAEggEkMIIBIAwp0JrRgNC40L/RgtC+0J/RgNC+
+IENTUCAo0LLQtdGA0YHQuNGPIDMuNikMUtCj0LTQvtGB0YLQvtCy0LXRgNGP0Y7R
+idC40Lkg0YbQtdC90YLRgCAi0JrRgNC40L/RgtC+0J/RgNC+INCj0KYiINCy0LXR
+gNGB0LjQuCAxLjUMT9Ch0LXRgNGC0LjRhNC40LrQsNGCINGB0L7QvtGC0LLQtdGC
+0YHRgtCy0LjRjyDihJYg0KHQpC8xMjQtMjIzOCDQvtGCIDA0LjEwLjIwMTMMTkPQ
+tdGA0YLQuNGE0LjQutCw0YIg0YHQvtC+0YLQstC10YLRgdGC0LLQuNGPIOKEliDQ
+odCkLzEyOC0yMzUxINC+0YIgMTUuMDQuMjAxNDAIBgYqhQMCAgMDQQAYmqFgidpR
+6Nvi6qd8OgbR6QcgHCErmEkUVG4FXE7cIOLXxcATsinWsxlo0xTMIroggvXymYf5
+RGengp2s+Qxs
+</wsse:BinarySecurityToken><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411" /><ds:Reference URI="#1body"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#gostr3411" /><ds:DigestValue>XLIITb1O3tQGCKx+dP1Z5dL1ChOd0KrFS+pXv5ugdAg=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>NXCsG1ZtLeUcfLE3oOI1SGZBQXoXLVrBuUZLKnbUdV8VeT6wh+Akfb62duH9rDLL
+KqzpDTbhKc2+mpVnlvlRFg==</ds:SignatureValue><ds:KeyInfo><wsse:SecurityTokenReference><wsse:Reference ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" URI="#31252f23-1827-4189-a6b2-0d0a8a8466b8" /></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature></wsse:Security></s:Header><s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" u:Id="1body"><getStatusRequest xmlns="http://portal.fccland.ru/rt/"><Message xmlns="http://smev.gosuslugi.ru/rev111111"><Sender><!--Code>KSIR01001</Code>
+  <Name>Тестовый СИР</Name--><Code>533101311</Code><Name>СИР Комитет по управлению муниципальной собственностью администрации Губкинского городского округа</Name></Sender><Recipient><Code>RRTR01001</Code><Name>Росреестр</Name></Recipient><Originator><!--Code>KSIR01001</Code>
+  <Name>Тестовый СИР</Name--><Code>533101311</Code><Name>СИР Комитет по управлению муниципальной собственностью администрации Губкинского городского округа</Name></Originator><TypeCode>GSRV</TypeCode><Status>PING</Status><Date>2015-08-26T14:50:48.9231799+03:00</Date><ExchangeType>2</ExchangeType><RequestIdRef>a3180599-0913-4d84-aa9e-690f51e88c49</RequestIdRef><!--RequestIdRef>d9ade5a3-6464-4ea5-ae56-274a027134e3</RequestIdRef--><OriginRequestIdRef>a684d51b-7769-42ac-aa3c-ff258221b896</OriginRequestIdRef><ServiceCode>10000013628</ServiceCode><CaseNumber>a3180599-0913-4d84-aa9e-690f51e88c49</CaseNumber></Message><MessageData xmlns="http://smev.gosuslugi.ru/rev111111"><AppData><requestNumber xmlns="http://portal.fccland.ru/types/">59-2837814</requestNumber></AppData></MessageData></getStatusRequest></s:Body></s:Envelope>
