@@ -169,24 +169,7 @@ namespace SignService.Smev.XmlSigners
 					throw new Exception($"Ошибка при попытке получить элемент содержащий подпись. {ex.Message}.");
 				}
 
-				string prefix = string.Empty;
-
-				try
-				{
-					log.LogDebug("Пытаемся получить значение префикса.");
-
-					prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3Types);
-					if (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0)
-					{
-						prefix = string.Empty;
-					}
-
-					log.LogDebug($"Значение префикса успешно получено: {prefix}.");
-				}
-				catch(Exception ex)
-				{
-					throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
-				}
+				string prefix = FindPrefix(doc.DocumentElement, false);
 
 				try
 				{
@@ -235,6 +218,38 @@ namespace SignService.Smev.XmlSigners
 		}
 
 		/// <summary>
+		/// Метод нахождения префикса
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="isTypeBasic"></param>
+		/// <returns></returns>
+		private string FindPrefix(XmlElement element, bool isTypeBasic)
+		{
+			try
+			{
+				log.LogDebug("Пытаемся получить значение префикса.");
+
+				string prefix = SoapDSigUtil.FindPrefix(element, NamespaceUri.Smev3Types);
+				if (!isTypeBasic)
+				{
+					prefix = (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0) ? string.Empty : prefix;
+				}
+				else
+				{
+					prefix = (string.IsNullOrEmpty(prefix) || string.Compare(prefix, "xmlns", true) == 0) ? "typesBasic" : prefix;
+				}
+
+				log.LogDebug($"Значение префикса успешно получено: {prefix}.");
+
+				return prefix;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
+			}
+		}
+
+		/// <summary>
 		/// Метод подписания вложений подписью органа власти
 		/// </summary>
 		/// <param name="doc"></param>
@@ -244,25 +259,7 @@ namespace SignService.Smev.XmlSigners
 		{
 			XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
 
-			string prefix = string.Empty;
-
-			try
-			{
-				log.LogDebug($"Пытаемся получить значение префикса.");
-
-				prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
-
-				if (string.IsNullOrEmpty(prefix) || string.Compare(prefix, "xmlns", true) == 0)
-				{
-					prefix = "typesBasic";
-				}
-
-				log.LogDebug($"Полученный prefix: {prefix}.");
-			}
-			catch(Exception ex)
-			{
-				throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
-			}
+			string prefix = FindPrefix(doc.DocumentElement, true);
 
 			nsmgr.AddNamespace(prefix, NamespaceUri.Smev3TypesBasic);
 
@@ -374,24 +371,7 @@ namespace SignService.Smev.XmlSigners
 
 					if (changed)
 					{
-						string prefixForSerialize = string.Empty;
-
-						try
-						{
-							log.LogDebug($"Пытаемся получить значение prefixForSerialize.");
-							prefixForSerialize = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
-
-							if (string.IsNullOrEmpty(prefixForSerialize) || string.Compare(prefixForSerialize, "xmlns", true) == 0)
-							{
-								prefixForSerialize = "";
-							}
-
-							log.LogDebug($"Полученное значение prefixForSerialize: {prefixForSerialize}.");
-						}
-						catch(Exception ex)
-						{
-							throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
-						}
+						string prefixForSerialize = FindPrefix(doc.DocumentElement, false);
 
 						try
 						{
