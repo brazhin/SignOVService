@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
 using SignService.Smev.Services;
-using SignService.Smev.SmevTransform;
 using SignService.Smev.Utils;
 using SignService.Smev.XmlSigners.SignedXmlExt;
 using SignService.Unix;
 using SignService.Win;
 using System;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -481,75 +479,6 @@ namespace SignService.Smev.XmlSigners
 				tagElem.PrependChild(doc.ImportNode(signatureElem, true));
 			}
 		}
-
-		/// <summary>
-		/// Метод добавляет в XML тэг <ds:Reference></Reference>
-		/// </summary>
-		/// <param name="doc"></param>
-		/// <param name="signedXml"></param>
-		/// <param name="customTag"></param>
-		/// <param name="customNamespace"></param>
-		/// <param name="precedingSibling"></param>
-		/// <returns></returns>
-		//private SignedXml AddReference(XmlDocument doc, SignedXml signedXml, IntPtr certificate, string customTag = "", string customNamespace = "", bool precedingSibling = false)
-		//{
-		//	Reference reference = new Reference();
-		//	string id = string.Empty;
-
-		//	if (precedingSibling == false)
-		//	{
-		//		if (ElemForSign == SignedTag.CustomTag && string.IsNullOrEmpty(customTag) != true)
-		//		{
-		//			id = SmevXmlHelper.GetElemId(doc, customTag, customNamespace, SignWithId);
-
-		//			if (string.IsNullOrEmpty(id) && SignWithId)
-		//			{
-		//				SmevXmlHelper.SetElemId(doc, customTag, NamespaceUri.WSSoap11, SignWithId, MrVersion, ref idCounter);
-		//			}
-		//		}
-		//		else
-		//		{
-		//			id = SmevXmlHelper.GetElemId(doc, tagForSign, tagForSignNamespaceUri, SignWithId);
-
-		//			if (string.IsNullOrEmpty(id) && SignWithId)
-		//			{
-		//				id = SmevXmlHelper.SetElemId(doc, tagForSign, tagForSignNamespaceUri, SignWithId, MrVersion, ref idCounter);
-		//			}
-		//		}
-		//	}
-
-		//	if (SignWithId)
-		//	{
-		//		reference.Uri = id;
-		//	}
-		//	else
-		//	{
-		//		reference.Uri = string.Empty;
-		//	}
-
-		//	log.LogDebug($"Пытаемся получить значение DigestMethod.");
-		//	reference.DigestMethod = SignServiceUtils.GetDigestMethod(SignServiceUtils.GetAlgId(certificate));
-		//	log.LogDebug($"Значение DigestMethod успешно получено: {reference.DigestMethod}.");
-
-		//	if (string.IsNullOrEmpty(customTag) != true && ElemForSign == SignedTag.CustomTag)
-		//	{
-		//		XmlDsigEnvelopedSignatureTransform envelop = new XmlDsigEnvelopedSignatureTransform();
-		//		reference.AddTransform(envelop);
-		//	}
-
-		//	XmlDsigExcC14NTransform c14 = new XmlDsigExcC14NTransform();
-		//	reference.AddTransform(c14);
-
-		//	if(MrVersion == Mr.MR300)
-		//	{
-		//		SmevTransformAlg smevTransform = new SmevTransformAlg();
-		//		reference.AddTransform(smevTransform);
-		//	}
-
-		//	signedXml.AddReference(reference);
-
-		//	return signedXml;
-		//}
 
 		/// <summary>
 		/// Метод поиска тэга в который необходимо добавить подпись
