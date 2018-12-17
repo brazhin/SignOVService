@@ -3,6 +3,8 @@ using SignService.CommonUtils;
 using SignService.Smev.Utils;
 using SignService.Smev.XmlSigners.SignedXmlExt;
 using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
@@ -14,21 +16,31 @@ namespace SignService.Smev.XmlSigners
 	/// </summary>
 	internal class SignerXml2XX : ISignerXml
 	{
+		private readonly ILogger<SignerXml2XX> log;
 		private const string xmldsigPrefix = "ds";
 
 		private readonly Mr mrVersion;
-		private readonly ILogger<SignerXml2XX> log;
+		
 		private string mrNamespace;
 		private string securityNamespace = NamespaceUri.OasisWSSecurityUtility;
-
-		private int idCounter = 1;
 		private string tagForSign = string.Empty;
 		private string tagForSignNamespaceUri = string.Empty;
 
+		private int idCounter = 1;
+
+		private Dictionary<Mr, string> mrText = new Dictionary<Mr, string>()
+		{
+			{ Mr.MR244, "MR244" },
+			{ Mr.MR255, "MR255" }
+		};
+
+		/// <summary>
+		/// Конструктор класса
+		/// </summary>
+		/// <param name="mr"></param>
+		/// <param name="loggerFactory"></param>
 		internal SignerXml2XX(Mr mr, ILoggerFactory loggerFactory)
 		{
-			this.SignWithId = false;
-			this.ElemForSign = SignedTag.Body;
 			this.mrVersion = mr;
 
 			if (mr == Mr.MR244)
@@ -49,8 +61,8 @@ namespace SignService.Smev.XmlSigners
 			this.log = loggerFactory.CreateLogger<SignerXml2XX>();
 		}
 
-		public SignedTag ElemForSign { get; set; }
-		public bool SignWithId { get; set; }
+		public SignedTag ElemForSign { get; set; } = SignedTag.Body;
+		public bool SignWithId { get; set; } = true;
 
 		/// <summary>
 		/// Метод подписи XML подписью органа власти
@@ -69,7 +81,7 @@ namespace SignService.Smev.XmlSigners
 					result = this.SignMessage2XX(doc, certificate);
 					break;
 				default:
-					throw new NotImplementedException("Неподдерживаемая версия методических рекомендаций");
+					throw new NotImplementedException("Неподдерживаемая версия методических рекомендаций.");
 			}
 
 			return result;
@@ -83,82 +95,183 @@ namespace SignService.Smev.XmlSigners
 		/// <returns></returns>
 		private XmlDocument SignMessage2XX(XmlDocument xml, IntPtr certificate)
 		{
-			// Удаляем тэг Actor
-			var message = SoapDSigUtil.RemoveActor(xml);
+			try
+			{
+				// Удаляем тэг Actor
+				string message = string.Empty;
 
-			XmlDocument doc = new XmlDocument() { PreserveWhitespace = true };
-			doc.LoadXml(message);
+				try
+				{
+					log.LogDebug("Пытаемся удалить атрибут 'Actor'.");
+					message = SoapDSigUtil.RemoveActor(xml);
+					log.LogDebug("Атрибут 'Actor' успешно удален.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке удалить атрибут 'Actor'. {ex.Message}.");
+				}
 
-			this.tagForSign = this.FindSmevTagForSign(doc);
-			SmevSignedXml signedXml = new SmevSignedXml(doc);
+				XmlDocument doc = new XmlDocument() { PreserveWhitespace = true };
 
-			signedXml = (SmevSignedXml)SmevXmlHelper.AddReference(doc, signedXml, certificate, 
-				SignWithId,
-				mrVersion,
-				ElemForSign,
-				ref idCounter,
-				tagForSign,
-				tagForSignNamespaceUri,
-				namespaceIdAttr: NamespaceUri.OasisWSSecurityUtility
-			);
+				try
+				{
+					doc.LoadXml(message);
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при формировании XML после удаления атрибута 'Actor'. {ex.Message}.");
+				}
 
-			signedXml.NamespaceForReference = NamespaceUri.OasisWSSecurityUtility;
-			signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+				try
+				{
+					log.LogDebug("Получаем значение тэга для подписи.");
+					this.tagForSign = this.FindSmevTagForSign(doc);
+					log.LogDebug($"Значение тэга для подписи получено. {tagForSign}.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке получить тэг с элементом для подписи. {ex.Message}.");
+				}
 
-			log.LogDebug($"Пытаемся получить значение SignatureMethod.");
-			signedXml.SignedInfo.SignatureMethod = SignServiceUtils.GetSignatureMethod(SignServiceUtils.GetAlgId(certificate));
-			log.LogDebug($"Значение SignatureMethod успешно получено: {signedXml.SignedInfo.SignatureMethod}.");
+				SmevSignedXml signedXml = new SmevSignedXml(doc);
 
-			XmlElement keyInfoElem = doc.CreateElement("KeyInfo", NamespaceUri.WSXmlDSig);
-			XmlElement binaryTokenElem = doc.CreateElement("wsse", "BinarySecurityToken", NamespaceUri.OasisWSSecuritySecext);
-			XmlElement tokenReferenceElem = doc.CreateElement("wsse", "SecurityTokenReference", NamespaceUri.OasisWSSecuritySecext);
+				try
+				{
+					log.LogDebug($"Выполняем добавление элемента Reference в XML.");
 
-			XmlElement referenceElem = doc.CreateElement("wsse", "Reference", NamespaceUri.OasisWSSecuritySecext);
+					signedXml = (SmevSignedXml)SmevXmlHelper.AddReference(doc, signedXml, certificate,
+						SignWithId,
+						mrVersion,
+						ElemForSign,
+						ref idCounter,
+						tagForSign,
+						tagForSignNamespaceUri,
+						namespaceIdAttr: NamespaceUri.OasisWSSecurityUtility
+					);
 
-			string certId = "uuid-" + Guid.NewGuid().ToString();
-			XmlAttribute idAttr = doc.CreateAttribute("u", "Id", NamespaceUri.OasisWSSecurityUtility);
-			XmlAttribute valueTypeTokenAttr = doc.CreateAttribute("ValueType");
-			XmlAttribute encodingTypeTokenAttr = doc.CreateAttribute("EncodingType");
+					log.LogDebug($"Добавление элемента Reference в XML выполнено успешно.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке добавить элемент Reference. {ex.Message}.");
+				}
 
-			idAttr.Value = certId;
-			valueTypeTokenAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
-			encodingTypeTokenAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
-			binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(idAttr, true));
-			binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(valueTypeTokenAttr, true));
-			binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(encodingTypeTokenAttr, true));
+				signedXml.NamespaceForReference = NamespaceUri.OasisWSSecurityUtility;
+				signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
-			X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
-			binaryTokenElem.InnerText = Convert.ToBase64String(cert.RawData);
+				try
+				{
+					log.LogDebug($"Пытаемся получить значение SignatureMethod.");
+					signedXml.SignedInfo.SignatureMethod = SignServiceUtils.GetSignatureMethod(SignServiceUtils.GetAlgId(certificate));
+					log.LogDebug($"Значение SignatureMethod успешно получено: {signedXml.SignedInfo.SignatureMethod}.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке получить значение метода подписи. {ex.Message}.");
+				}
 
-			XmlAttribute valueTypeAttr = doc.CreateAttribute("ValueType");
-			valueTypeAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
-			referenceElem.Attributes.Append((XmlAttribute)doc.ImportNode(valueTypeAttr, true));
+				XmlElement keyInfoElem = doc.CreateElement("KeyInfo", NamespaceUri.WSXmlDSig);
+				XmlElement binaryTokenElem = doc.CreateElement("wsse", "BinarySecurityToken", NamespaceUri.OasisWSSecuritySecext);
+				XmlElement tokenReferenceElem = doc.CreateElement("wsse", "SecurityTokenReference", NamespaceUri.OasisWSSecuritySecext);
 
-			XmlAttribute uriAttr = doc.CreateAttribute("URI");
-			uriAttr.Value = "#" + certId;
-			referenceElem.Attributes.Append((XmlAttribute)doc.ImportNode(uriAttr, true));
+				XmlElement referenceElem = doc.CreateElement("wsse", "Reference", NamespaceUri.OasisWSSecuritySecext);
 
-			tokenReferenceElem.PrependChild(doc.ImportNode(referenceElem, true));
+				string certId = "uuid-" + Guid.NewGuid().ToString();
+				XmlAttribute idAttr = doc.CreateAttribute("u", "Id", NamespaceUri.OasisWSSecurityUtility);
+				XmlAttribute valueTypeTokenAttr = doc.CreateAttribute("ValueType");
+				XmlAttribute encodingTypeTokenAttr = doc.CreateAttribute("EncodingType");
 
-			keyInfoElem.PrependChild(doc.ImportNode(tokenReferenceElem, true));
+				idAttr.Value = certId;
+				valueTypeTokenAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
+				encodingTypeTokenAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
 
-			KeyInfoNode keyNode = new KeyInfoNode(tokenReferenceElem);
-			KeyInfo keyInfo = new KeyInfo();
-			keyInfo.AddClause(keyNode);
-			signedXml.KeyInfo = keyInfo;
-			signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+				binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(idAttr, true));
+				binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(valueTypeTokenAttr, true));
+				binaryTokenElem.Attributes.Append((XmlAttribute)doc.ImportNode(encodingTypeTokenAttr, true));
 
-			XmlElement signatureElem = signedXml.GetXml(xmldsigPrefix);
+				X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
+				binaryTokenElem.InnerText = Convert.ToBase64String(cert.RawData);
 
-			FillSignatureElement(doc, signatureElem, certificate, binaryTokenElem);
+				XmlAttribute valueTypeAttr = doc.CreateAttribute("ValueType");
+				valueTypeAttr.Value = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
+				referenceElem.Attributes.Append((XmlAttribute)doc.ImportNode(valueTypeAttr, true));
 
-			SoapDSigUtil.AddActor(doc);
+				XmlAttribute uriAttr = doc.CreateAttribute("URI");
+				uriAttr.Value = "#" + certId;
 
-			return doc;
+				referenceElem.Attributes.Append((XmlAttribute)doc.ImportNode(uriAttr, true));
+				tokenReferenceElem.PrependChild(doc.ImportNode(referenceElem, true));
+				keyInfoElem.PrependChild(doc.ImportNode(tokenReferenceElem, true));
+
+				try
+				{
+					KeyInfoNode keyNode = new KeyInfoNode(tokenReferenceElem);
+					KeyInfo keyInfo = new KeyInfo();
+					keyInfo.AddClause(keyNode);
+					signedXml.KeyInfo = keyInfo;
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при формировании элемента KeyInfo. {ex.Message}.");
+				}
+
+				try
+				{
+					log.LogDebug($"Пытаемся вычислить подпись.");
+					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+					log.LogDebug($"Вычисление подписи выполнено успешно.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке вычислить подпись для XML. {ex.Message}.");
+				}
+
+				XmlElement signatureElem = null;
+
+				try
+				{
+					log.LogDebug("Пытаемся получить элемент с подписью.");
+					signatureElem = signedXml.GetXml(xmldsigPrefix);
+					log.LogDebug("Элемент с подписью успешно получен.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке получить элемент содержащий подпись. {ex.Message}.");
+				}
+
+				try
+				{
+					log.LogDebug("Пытаемся добавить подпись в XML содержимое.");
+					FillSignatureElement(doc, signatureElem, certificate, binaryTokenElem);
+					log.LogDebug("Подпись успешно добавлена.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке заполнить XML информацией о подписи. {ex.Message}.");
+				}
+
+				try
+				{
+					log.LogDebug("Пытаемся добавить атрибут 'Actor'.");
+					SoapDSigUtil.AddActor(doc);
+					log.LogDebug("Атрибут 'Actor' успешно добавлен.");
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке добавить атрибут 'Actor'. {ex.Message}.");
+				}
+
+				return doc;
+			}
+			catch(Exception ex)
+			{
+				log.LogError($"Ошибка при попытке подписать XML. {ex.Message}.");
+				throw new CryptographicException($"Ошибка при попытке подписать XML для версии {mrText[mrVersion]}. {ex.Message}.");
+			}
 		}
 
 		/// <summary>
-		/// 
+		/// Добавляет тэг с подписью целиком. Сертификат должен быть в тэге подписи.
 		/// </summary>
 		/// <param name="doc"></param>
 		/// <param name="signatureElem"></param>
@@ -244,63 +357,6 @@ namespace SignService.Smev.XmlSigners
 			XmlNodeList nodeList = node.GetElementsByTagName(SignatureTags.SecurityTag, SignatureTags.SecurityNamespace);
 			SmevXmlHelper.RemoveNodes(node, nodeList);
 		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="doc"></param>
-		/// <param name="signedXml"></param>
-		/// <param name="certificate"></param>
-		/// <param name="customTag"></param>
-		/// <param name="customNamespace"></param>
-		/// <param name="namespaceIdAttr"></param>
-		/// <returns></returns>
-		//private SignedXml AddReference(XmlDocument doc, SignedXml signedXml, IntPtr certificate, string customTag = "", string customNamespace = "", string namespaceIdAttr = "")
-		//{
-		//	Reference reference = new Reference();
-		//	string id = string.Empty;
-
-		//	if (this.ElemForSign == SignedTag.CustomTag && string.IsNullOrEmpty(customTag) != true)
-		//	{
-		//		id = SmevXmlHelper.GetElemId(doc, customTag, customNamespace, SignWithId, namespaceIdAttr);
-
-		//		if (string.IsNullOrEmpty(id) && this.SignWithId)
-		//		{
-		//			id = "#" + SmevXmlHelper.SetElemId(doc, customTag, this.tagForSignNamespaceUri, SignWithId, mrVersion, ref idCounter, "", namespaceIdAttr);
-		//		}
-		//	}
-		//	else
-		//	{
-		//		id = SmevXmlHelper.GetElemId(doc, this.tagForSign, this.tagForSignNamespaceUri, SignWithId, namespaceIdAttr);
-
-		//		if (string.IsNullOrEmpty(id) && this.SignWithId)
-		//		{
-		//			id = "#" + SmevXmlHelper.SetElemId(doc, this.tagForSign, this.tagForSignNamespaceUri, SignWithId, mrVersion, ref idCounter, "", namespaceIdAttr);
-		//		}
-		//	}
-
-		//	reference.Uri = (SignWithId) ? id : string.Empty;
-		//	reference.DigestMethod = SignServiceUtils.GetDigestMethod(SignServiceUtils.GetAlgId(certificate));
-
-		//	if (string.IsNullOrEmpty(customTag) != true && this.ElemForSign == SignedTag.CustomTag)
-		//	{
-		//		XmlDsigEnvelopedSignatureTransform envelop = new XmlDsigEnvelopedSignatureTransform();
-		//		reference.AddTransform(envelop);
-		//	}
-
-		//	XmlDsigExcC14NTransform c14 = new XmlDsigExcC14NTransform();
-		//	reference.AddTransform(c14);
-
-		//	if (this.mrVersion == Mr.MR300)
-		//	{
-		//		SmevTransformAlg smevTransform = new SmevTransformAlg();
-		//		reference.AddTransform(smevTransform);
-		//	}
-
-		//	signedXml.AddReference(reference);
-
-		//	return signedXml;
-		//}
 
 		/// <summary>
 		/// Метод поиска тэга для подписи
