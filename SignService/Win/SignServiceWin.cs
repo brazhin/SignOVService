@@ -71,11 +71,23 @@ namespace SignService.Win
 		/// <returns></returns>
 		internal string SignXml(string xml, Mr mr, string thumbprint)
 		{
+			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
 			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
 
 			var doc = new XmlDocument();
-			doc.LoadXml(xml);
 
+			try
+			{
+				log.LogDebug("Пытаемся распарсить входящий XML.");
+				doc.LoadXml(xml);
+			}
+			catch (Exception ex)
+			{
+				log.LogError($"Ошибка при парсинге XML содержимого в запросе. {ex.Message}.");
+				throw new CryptographicException($"Ошибка при парсинге XML содержимого в запросе. {ex.Message}.");
+			}
+
+			log.LogDebug($"Пытаемся найти сертификат с указанным thumbprint: {thumbprint}.");
 			var certHandle = FindCertificate(thumbprint);
 
 			var signedXml = signer.SignMessageAsOv(doc, certHandle);
