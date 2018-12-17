@@ -209,7 +209,7 @@ namespace SignService.Smev.XmlSigners
 			catch(Exception ex)
 			{
 				log.LogError($"Ошибка при попытке подписать XML. {ex.Message}.");
-				throw new CryptographicException($"Ошибка при попытке подписать XML. {ex.Message}.");
+				throw new CryptographicException($"Ошибка при попытке подписать XML для версии МР300. {ex.Message}.");
 			}
 			finally
 			{
