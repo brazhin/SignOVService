@@ -37,7 +37,7 @@ namespace SignService.Unix
 		/// <returns></returns>
 		internal string SignXml(string xml, Mr mr, string thumbprint)
 		{
-			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
+			log.LogDebug($"Выполняем метод подписи XML согласно версии МР: {mr}.");
 			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
 
 			var doc = new XmlDocument();
@@ -53,7 +53,7 @@ namespace SignService.Unix
 				throw new CryptographicException($"Ошибка при парсинге XML содержимого в запросе. {ex.Message}.");
 			}
 
-			log.LogDebug($"Пытаемся найти сертификат с указанным thumbprint: {thumbprint}.");
+			log.LogDebug($"Выполняем поиск сертификата с указанным thumbprint: {thumbprint}.");
 			var certHandle = FindCertificate(thumbprint);
 
 			var signedXml = signer.SignMessageAsOv(doc, certHandle);
@@ -76,15 +76,15 @@ namespace SignService.Unix
 
 			try
 			{
-				log.LogDebug($"Пытаемся открыть Личное хранилище сертификатов для Текущего пользователя.");
+				log.LogDebug($"Пытаемся открыть 'MY' хранилище сертификатов для Текущего пользователя.");
 
 				// Открываем хранилище сертификатов
 				handleSysStore = CApiExtUnix.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "MY");
 
 				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
 				{
-					log.LogError("Не удалось открыть хранилище Личное для текущего пользователя. Handler == 0.");
-					throw new CryptographicException("Ошибка, не удалось открыть хранилище Личное для текущего пользователя.");
+					log.LogError("Не удалось открыть хранилище 'MY' для текущего пользователя.");
+					throw new CryptographicException("Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя.");
 				}
 
 				log.LogDebug($"Личное хранилище сертификатов для Текущего пользователя успешно открыто.");
@@ -117,27 +117,15 @@ namespace SignService.Unix
 
 				if (handleCert == IntPtr.Zero || handleCert == null)
 				{
-					log.LogError("Ошибка при попытке получить дескриптор сертификата. Handler == 0.");
-					throw new CryptographicException("Ошибка при попытке получить дескриптор сертификата.");
+					log.LogError("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
+					throw new CryptographicException("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
 				}
 
-				log.LogDebug("Пытаемся получить дубликат сертификата.");
-				var hCert = CApiExtUnix.CertDuplicateCertificateContext(handleCert);
-
-				if (hCert == IntPtr.Zero || hCert == null)
-				{
-					log.LogError("Ошибка при попытке получить дубликат сертификата. Handle == 0.");
-					throw new CryptographicException("Ошибка при попытке получить дубликат сертификата.");
-				}
-
-				log.LogDebug("Дубликат сертификата успешно получен. Возвращаем его в качестве результата.");
-
-				return hCert;
+				return handleCert;
 			}
 			finally
 			{
 				Marshal.FreeHGlobal(hashb.pbData);
-				CApiExtUnix.CertFreeCertificateContext(handleCert);
 				CApiExtUnix.CertCloseStore(handleSysStore, 0);
 			}
 		}
@@ -148,10 +136,19 @@ namespace SignService.Unix
 		/// <param name="data"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal byte[] Sign(byte[]data, string thumbprint)
 		{
-			IntPtr hCert = FindCertificate(thumbprint);
-			return Sign(data, hCert);
+			try
+			{
+				IntPtr hCert = FindCertificate(thumbprint);
+				return Sign(data, hCert);
+			}
+			catch(Exception ex)
+			{
+				log.LogError($"Ошибка при выполнении подписи данных. {ex.Message}.");
+				throw new CryptographicException($"Ошибка при выполнении подписи данных. {ex.Message}.");
+			}
 		}
 
 		/// <summary>
@@ -161,7 +158,7 @@ namespace SignService.Unix
 		[SecurityCritical]
 		internal bool VerifyDetachedMessage(byte[] signatureData, byte[] messageData, bool isCheckTrusted, ref X509Certificate2 certFromSign)
 		{
-			log.LogDebug("Запущен метод проверки открепленной подписи под Windows платформой.");
+			log.LogDebug("Запущен метод проверки открепленной подписи под Unix платформой.");
 
 			// Заполняем буфер с информацией о данных на основе которых получена подпись
 			IntPtr messagePtr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(byte)) * messageData.Length);
@@ -181,7 +178,7 @@ namespace SignService.Unix
 
 			try
 			{
-				log.LogDebug("Выполняем проверку открепленной подписи используя метод CryptVerifyDetachedMessageSignature.");
+				log.LogDebug("Выполняем проверку открепленной подписи.");
 
 				bool result = CApiExtUnix.CryptVerifyDetachedMessageSignature(
 					ref verifyParams, // Verify parameters.
@@ -206,37 +203,29 @@ namespace SignService.Unix
 				{
 					log.LogDebug($"Флаг проверки сертификата в списке доверенных издателей {(isCheckTrusted ? "установлен" : "не установлен")}");
 
-					// При создании X509Certificate2 под Linux, пришлось использовать приведение хэндлера сертификата к структуре CERT_CONTEXT,
-					// где в pbCertEncoded находится декодированное значение сертификата. При таком подходе информация о сертификате корректно формирует класс X509Certificate2
-					// однако использование X509Certificate2.Handle приведет к ошибке.
 					if ((IntPtr)pCertContext.Target != IntPtr.Zero)
 					{
-						CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>((IntPtr)pCertContext.Target);
-						byte[] ctx = new byte[contextCert.cbCertEncoded];
-						Marshal.Copy(contextCert.pbCertEncoded, ctx, 0, ctx.Length);
-
-						certFromSign = new X509Certificate2(ctx);
+						certFromSign = SignServiceUtils.GetX509Certificate2((IntPtr)pCertContext.Target);
 					}
 
-					//TODO: закомментировал т.к под Linux не реализовано получение списка доверенных издателей
-					//if (isCheckTrusted)
-					//{
-					//	log.LogDebug("Сертификат из подписи успешно получен. Проверяем наличие сертификата в списке доверенных издателей.");
+					if (isCheckTrusted)
+					{
+						log.LogDebug("Сертификат из подписи успешно получен. Проверяем наличие сертификата в списке доверенных издателей.");
 
-					//	var trustedCerts = GetTrustedCertificates();
+						var trustedCerts = GetTrustedCertificates();
 
-					//	if (trustedCerts.Count <= 0)
-					//	{
-					//		log.LogError("Список доверенных издателей пуст. Отсутствует доверие к сертификату.");
-					//		return false;
-					//	}
+						if (trustedCerts.Count <= 0)
+						{
+							log.LogError("Список доверенных издателей пуст. Отсутствует доверие к сертификату.");
+							return false;
+						}
 
-					//	if (!trustedCerts.Contains(certFromSign))
-					//	{
-					//		log.LogError("Сертификат указанный в подписи не найден среди доверенных издателей.");
-					//		return false;
-					//	}
-					//}
+						if (!trustedCerts.Contains(certFromSign))
+						{
+							log.LogError("Сертификат указанный в подписи не найден среди доверенных издателей.");
+							return false;
+						}
+					}
 				}
 				catch (Exception ex)
 				{
@@ -283,19 +272,10 @@ namespace SignService.Unix
 				var hash = new Gost2012_256Unix();
 				hashResult = hash.ComputeHash(data);
 			}
-			else if (algId == CApiExtConst.GOST2012_512)
-			{
-				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-512");
-				var hash = new Gost2012_512Unix();
-				hashResult = hash.ComputeHash(data);
-			}
 			else
 			{
-				log.LogDebug($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам. Используем криптопровайдер системы.");
-				throw new CryptographicException($"Неизвестный алгоритм хэширования: {algId}.");
-				// Ветка для использования MS провайдера при формировании хэш
-				//HashAlgorithm hash = new HashMsApiUtil((int)algId);
-				//hashResult = hash.ComputeHash(data);
+				log.LogDebug($"Неподдерживаемый алгоритм хэширования: {algId}.");
+				throw new CryptographicException($"Неподдерживаемый алгоритм хэширования: {algId}.");
 			}
 
 			if (hashResult == null || hashResult.Length <= 0)
@@ -349,6 +329,48 @@ namespace SignService.Unix
 			}
 
 			return hassInfo;
+		}
+
+		/// <summary>
+		/// Метод получения списка доверенных сертификатов
+		/// </summary>
+		/// <returns></returns>
+		[SecurityCritical]
+		internal X509Certificate2Collection GetTrustedCertificates()
+		{
+			log.LogDebug("Пытаемся получить доступ к хранилищу доверенных сертификатов текущего пользователя.");
+			IntPtr handleSysStore = IntPtr.Zero;
+
+			try
+			{
+				// Открываем хранилище сертификатов
+				handleSysStore = CApiExtUnix.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "TrustedPublisher");
+
+				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
+				{
+					log.LogError("Не удалось открыть хранилище Доверенных издателей для текущего пользователя. Handler == 0.");
+					throw new CryptographicException("Ошибка, не удалось открыть хранилище Доверенных издателей для текущего пользователя.");
+				}
+
+				IntPtr currentCertContext = CApiExtUnix.CertEnumCertificatesInStore(handleSysStore, IntPtr.Zero);
+				X509Certificate2Collection trustedList = new X509Certificate2Collection();
+
+				while (currentCertContext != IntPtr.Zero)
+				{
+					// Формируем X509Certificate2 из IntPtr
+					var x509Certificate2 = SignServiceUtils.GetX509Certificate2(currentCertContext);
+					trustedList.Add(x509Certificate2);
+
+					currentCertContext = CApiExtUnix.CertEnumCertificatesInStore(handleSysStore, currentCertContext);
+				}
+
+				return trustedList;
+			}
+			finally
+			{
+				// Закрываем хранилище сертификатов
+				CApiExtUnix.CertCloseStore(handleSysStore, 0);
+			}
 		}
 
 		/// <summary>

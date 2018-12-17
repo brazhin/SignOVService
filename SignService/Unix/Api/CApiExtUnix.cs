@@ -8,23 +8,74 @@ using static SignService.CApiExtConst;
 
 namespace SignService.Unix.Api
 {
+	/// <summary>
+	/// Класс для подключения функций API КриптоПро (capilite)
+	/// </summary>
 	internal class CApiExtUnix
 	{
 		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
 
-		[DllImport(libCapi20, CharSet = CharSet.Auto, SetLastError = true)]
+		/// <summary>
+		/// Функция получает первый или следующий сертификат в хранилище сертификатов.
+		/// Эта функция используется в цикле для того, чтобы последовательно получить все сертификаты в хранилище сертификатов.
+		/// </summary>
+		/// <param name="hCertStore"></param>
+		/// <param name="pPrevCertContext"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, SetLastError = true)]
+		[SecurityCritical]
+		[SuppressUnmanagedCodeSecurity]
+		internal static extern IntPtr CertEnumCertificatesInStore(
+			[In] IntPtr hCertStore,
+			[In] IntPtr pPrevCertContext
+		);
+
+		/// <summary>
+		/// Функция CryptAcquireCertificatePrivateKey получает дескриптор HCRYPTPROV CSP , включая доступ к связанному с ним ключевому контейнеруи параметр dwKeySpec
+		/// для определенного пользователем контекста сертификата.
+		/// Эта функция используется для получения доступа к закрытому ключу пользователя, когда сертификат пользователя доступен,
+		/// а дескриптор CSP с пользовательским ключевым контейнером не является доступным.
+		/// Эту функцию может использовать только владелец закрытого ключа, а не любой пользователь.
+		/// </summary>
+		/// <param name="pCert"></param>
+		/// <param name="dwFlags"></param>
+		/// <param name="pvReserved"></param>
+		/// <param name="phCryptProv"></param>
+		/// <param name="pdwKeySpec"></param>
+		/// <param name="pfCallerFreeProv"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, SetLastError = true)]
 		[SecurityCritical]
 		[SuppressUnmanagedCodeSecurity]
 		internal static extern bool CryptAcquireCertificatePrivateKey([In] IntPtr pCert, [In] uint dwFlags, [In] IntPtr pvReserved,
 			[In, Out] ref IntPtr phCryptProv, [In, Out] ref uint pdwKeySpec, [In, Out] ref bool pfCallerFreeProv);
 
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		/// <summary>
+		/// Функция CryptReleaseContext освобождает дескриптор CSP и ключевой контейнер.
+		/// При каждом вызове этой функции счетчик ссылок на CSP уменьшается на единицу.
+		/// Когда счетчик ссылок обнуляется, контекст полностью освобождается и более не может быть использован ни одной функцией данного приложения.
+		/// Приложение вызывает эту функцию после завершения использования CSP.
+		/// После вызова этой функции освобожденный дескриптор CSP становится более не действительным.
+		/// Эта функция не уничтожает ключевые контейнеры и ключевые пары.
+		/// </summary>
+		/// <param name="hCryptProv"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, ExactSpelling = false, SetLastError = true)]
 		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 		[SecurityCritical]
 		[SuppressUnmanagedCodeSecurity]
 		internal static extern bool CryptReleaseContext(IntPtr hCryptProv, uint dwFlags);
 
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
+		/// <summary>
+		/// Функция CryptSetHashParam переделывает операции объекта функции хеширования, включая установку начального содержимого хеша и выбор особенных алгоритмов хеширования.
+		/// </summary>
+		/// <param name="hHash"></param>
+		/// <param name="dwParam"></param>
+		/// <param name="pbData"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, ExactSpelling = false, SetLastError = true)]
 		[SecurityCritical]
 		[SuppressUnmanagedCodeSecurity]
 		internal static extern bool CryptSetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, [In] uint dwFlags);
