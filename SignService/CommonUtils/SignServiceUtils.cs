@@ -15,7 +15,7 @@ using static SignService.CApiExtConst;
 
 namespace SignService.CommonUtils
 {
-	internal static class SignServiceUtils
+	public static class SignServiceUtils
 	{
 		/// <summary>
 		/// Соответствие для алгоритмов хэширования плагина КриптоПро
@@ -169,19 +169,26 @@ namespace SignService.CommonUtils
 		/// <param name="certHandle"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static X509Certificate2 GetX509Certificate2(IntPtr certHandle)
+		public static X509Certificate2 GetX509Certificate2(IntPtr certHandle)
 		{
-			if (IsUnix)
+			try
 			{
-				CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(certHandle);
-				byte[] ctx = new byte[contextCert.cbCertEncoded];
-				Marshal.Copy(contextCert.pbCertEncoded, ctx, 0, ctx.Length);
+				if (IsUnix)
+				{
+					CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(certHandle);
+					byte[] ctx = new byte[contextCert.cbCertEncoded];
+					Marshal.Copy(contextCert.pbCertEncoded, ctx, 0, ctx.Length);
 
-				return new X509Certificate2(ctx);
+					return new X509Certificate2(ctx);
+				}
+				else
+				{
+					return new X509Certificate2(certHandle);
+				}
 			}
-			else
+			catch(Exception ex)
 			{
-				return new X509Certificate2(certHandle);
+				throw new Exception($"Ошибка при попытке преобразовать значение указателя на сертификат к объекту вида X509Certificate2. {ex.Message}.");
 			}
 		}
 
