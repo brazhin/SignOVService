@@ -62,7 +62,7 @@ namespace SignService.Smev.XmlSigners
 			}
 			catch (Exception ex)
 			{
-				log.LogError($"Ошибка при попытке проверить и подписать вложения. {ex.Message}.");
+				log.LogError($"Ошибка при попытке проверить и подписать вложения в методе. {ex.Message}.");
 				throw new CryptographicException($"Ошибка при попытке проверить и подписать вложения. {ex.Message}");
 			}
 
@@ -74,68 +74,153 @@ namespace SignService.Smev.XmlSigners
 
 				ElemForSign = SignedTag.Smev3TagType;
 
-				log.LogDebug($"Пытаемся найти тэг для подписи.");
-				tagForSign = FindSmevTagForSign(doc);
-				log.LogDebug($"Тэг для подписи: {tagForSign}.");
+				try
+				{
+					log.LogDebug($"Пытаемся найти тэг для подписи.");
+					tagForSign = FindSmevTagForSign(doc);
+					log.LogDebug($"Тэг для подписи: {tagForSign}.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке определить тэг для подписи. {ex.Message}.");
+				}
 
-				log.LogDebug("Пытаемся удалить информацию о подписи, если есть.");
-				RemoveCallerInformationSystemSignature(doc.DocumentElement);
-				SmevXmlHelper.SetElemId(doc, tagForSign, tagForSignNamespaceUri, SignWithId, MrVersion, ref idCounter, SmevMr3xxTags.InformationSystemSignatureId);
+				try
+				{
+					log.LogDebug("Пытаемся удалить информацию о подписи, если есть.");
+					RemoveCallerInformationSystemSignature(doc.DocumentElement);
+					log.LogDebug("Удаление выполнено успешно.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке удалить информацию о подписи. {ex.Message}.");
+				}
 
-				signedXml = (Smev3xxSignedXml)SmevXmlHelper.AddReference(doc, signedXml, certificate, 
-					SignWithId, MrVersion, ElemForSign, ref idCounter, tagForSign, tagForSignNamespaceUri
-				);
+				try
+				{
+					log.LogDebug($"Пытаемся установить значение идентификатора элемента. Флаг SignWithId: {SignWithId}.");
+					SmevXmlHelper.SetElemId(doc, tagForSign, tagForSignNamespaceUri, SignWithId, MrVersion, ref idCounter, SmevMr3xxTags.InformationSystemSignatureId);
+					log.LogDebug($"Установка значения идентификатора элемента выполнена успешно.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке установить идентификатор элемента. {ex.Message}.");
+				}
+
+				try
+				{
+					log.LogDebug($"Пытаемся добавить в XML тэг Reference.");
+					signedXml = (Smev3xxSignedXml)SmevXmlHelper.AddReference(doc, signedXml, certificate,
+						SignWithId, MrVersion, ElemForSign, ref idCounter, tagForSign, tagForSignNamespaceUri
+					);
+					log.LogDebug($"Тэг Reference успешно добавлен.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при добавлении тэга Reference. {ex.Message}.");
+				}
 
 				signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
-				log.LogDebug($"Пытаемся получить значение SignatureMethod.");
-				signedXml.SignedInfo.SignatureMethod = SignServiceUtils.GetSignatureMethod(SignServiceUtils.GetAlgId(certificate));
-				log.LogDebug($"Значение SignatureMethod успешно получено: {signedXml.SignedInfo.SignatureMethod}.");
+				try
+				{
+					log.LogDebug($"Пытаемся получить значение SignatureMethod.");
+					signedXml.SignedInfo.SignatureMethod = SignServiceUtils.GetSignatureMethod(SignServiceUtils.GetAlgId(certificate));
+					log.LogDebug($"Значение SignatureMethod успешно получено: {signedXml.SignedInfo.SignatureMethod}.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при получении значения алгоритма подписи. {ex.Message}.");
+				}
 
-				KeyInfo keyInfo = new KeyInfo();
+				try
+				{
+					KeyInfo keyInfo = new KeyInfo();
+					X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
+					keyInfo.AddClause(new KeyInfoX509Data(cert));
+					signedXml.KeyInfo = keyInfo;
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при формировании элемента KeyInfo. {ex.Message}.");
+				}
 
-				log.LogDebug("Пытаемся получить информацию о сертификате.");
-				X509Certificate2 cert = SignServiceUtils.GetX509Certificate2(certificate);
-				log.LogDebug($"Информация о сертификате успешно получена. Владелец сертификата: {cert.SubjectName}.");
+				try
+				{
+					log.LogDebug($"Пытаемся вычислить подпись.");
+					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+					log.LogDebug($"Вычисление подписи выполнено успешно.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке вычислить подпись для XML. {ex.Message}.");
+				}
 
-				keyInfo.AddClause(new KeyInfoX509Data(cert));
-				signedXml.KeyInfo = keyInfo;
-
-				log.LogDebug($"Пытаемся вычислить подпись.");
-				signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
-				log.LogDebug($"Подпись успешно получена.");
-
-				// Получаем подписанный элемент
-				XmlElement signatureElem = signedXml.GetXml(xmldsigPrefix);
-
-				log.LogDebug("Пытаемся получить значение prefix.");
-				string prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3Types);
-
+				XmlElement signatureElem = null;
 				XmlElement sysSignature = null;
 
-				if (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0)
+				try
 				{
-					prefix = string.Empty;
+					log.LogDebug("Пытаемся получить элемент с подписью.");
+					signatureElem = signedXml.GetXml(xmldsigPrefix);
+					log.LogDebug("Элемент с подписью успешно получен.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке получить элемент содержащий подпись. {ex.Message}.");
 				}
 
-				log.LogDebug($"Значение prefix: {prefix}.");
+				string prefix = string.Empty;
 
-				if (!string.IsNullOrEmpty(prefix))
+				try
 				{
-					sysSignature = doc.CreateElement(prefix, SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
-					sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+					log.LogDebug("Пытаемся получить значение префикса.");
+
+					prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3Types);
+					if (string.Compare(prefix, "xmlns", StringComparison.InvariantCultureIgnoreCase) == 0)
+					{
+						prefix = string.Empty;
+					}
+
+					log.LogDebug($"Значение префикса успешно получено: {prefix}.");
 				}
-				else
+				catch(Exception ex)
 				{
-					sysSignature = doc.CreateElement("", SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
-					sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+					throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
 				}
 
-				log.LogDebug("Пытаемся добавить подпись в XML содержимое.");
-				FillSignatureElement(doc, sysSignature, certificate, tagForRequest, tagForRequestNamespaceUri, true);
-				log.LogDebug("Подпись успешно добавлена.");
+				try
+				{
+					log.LogDebug("Заполняем объект sysSignature элементом в с подписью и префиксом.");
 
-				SignServiceUtils.FreeHandleCertificate(certificate);
+					if (!string.IsNullOrEmpty(prefix))
+					{
+						sysSignature = doc.CreateElement(prefix, SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
+						sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+					}
+					else
+					{
+						sysSignature = doc.CreateElement("", SignatureTags.CallerInformationSystemSignatureTag, SignatureTags.CallerInformationSystemSignatureNamespace);
+						sysSignature.PrependChild(doc.ImportNode(signatureElem, true));
+					}
+
+					log.LogDebug("Заполнение объекта sysSignature успешно выполнено.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке сформировать элемент sysSignature. {ex.Message}.");
+				}
+
+				try
+				{
+					log.LogDebug("Пытаемся добавить подпись в XML содержимое.");
+					FillSignatureElement(doc, sysSignature, certificate, tagForRequest, tagForRequestNamespaceUri, true);
+					log.LogDebug("Подпись успешно добавлена.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при попытке заполнить XML информацией о подписи. {ex.Message}.");
+				}
 
 				return doc;
 			}
@@ -143,6 +228,10 @@ namespace SignService.Smev.XmlSigners
 			{
 				log.LogError($"Ошибка при попытке подписать XML. {ex.Message}.");
 				throw new CryptographicException($"Ошибка при попытке подписать XML. {ex.Message}.");
+			}
+			finally
+			{
+				SignServiceUtils.FreeHandleCertificate(certificate);
 			}
 		}
 
@@ -156,15 +245,26 @@ namespace SignService.Smev.XmlSigners
 		{
 			XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
 
-			log.LogDebug("Пытаемся получить prefix.");
-			string prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+			string prefix = string.Empty;
 
-			if (string.IsNullOrEmpty(prefix) || string.Compare(prefix, "xmlns", true) == 0)
+			try
 			{
-				prefix = "typesBasic";
+				log.LogDebug($"Пытаемся получить значение префикса.");
+
+				prefix = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+
+				if (string.IsNullOrEmpty(prefix) || string.Compare(prefix, "xmlns", true) == 0)
+				{
+					prefix = "typesBasic";
+				}
+
+				log.LogDebug($"Полученный prefix: {prefix}.");
+			}
+			catch(Exception ex)
+			{
+				throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
 			}
 
-			log.LogDebug($"Полученный prefix: {prefix}.");
 			nsmgr.AddNamespace(prefix, NamespaceUri.Smev3TypesBasic);
 
 			log.LogDebug($"Пытаемся найти тэг заголовка вложений.");
@@ -180,8 +280,18 @@ namespace SignService.Smev.XmlSigners
 				log.LogDebug("Список заголовков и контента с вложениями был успешно получен.");
 
 				bool changed = false;
+				AttachmentHeaderList headerList = null;
 
-				AttachmentHeaderList headerList = DeserializeXml<AttachmentHeaderList>(attachmentHeaderList, NamespaceUri.Smev3TypesBasic);
+				try
+				{
+					log.LogDebug("Пытаемся получить объект AttachmentHeaderList.");
+					headerList = DeserializeXml<AttachmentHeaderList>(attachmentHeaderList, NamespaceUri.Smev3TypesBasic);
+					log.LogDebug("Объект AttachmentHeaderList успешно получен.");
+				}
+				catch(Exception ex)
+				{
+					throw new Exception($"Ошибка при получении объекта AttachmentHeaderList. {ex.Message}.");
+				}
 
 				// Если нет информации о вложениях
 				if(headerList == null || headerList.AttachmentHeader == null || headerList.AttachmentHeader.Length <= 0)
@@ -221,8 +331,7 @@ namespace SignService.Smev.XmlSigners
 				}
 				catch(Exception ex)
 				{
-					log.LogError($"Ошибка при десериализации контента вложений. {ex.Message}.");
-					throw new CryptographicException($"Ошибка при десериализации контента вложений. " +
+					throw new Exception($"Ошибка при десериализации контента вложений. " +
 						$"Убедитесь, что для вложений, которые находятся на FTP, или будут расположены в МТОМ запросе подпись была получена отдельно. " +
 						$"Содержимое ошибки {ex.Message}.");
 				}
@@ -239,15 +348,23 @@ namespace SignService.Smev.XmlSigners
 							if (content != null && content.Content != null && content.Content.Length > 0)
 							{
 								byte[] signature = null;
-								if (SignServiceUtils.IsUnix)
+
+								try
 								{
-									log.LogDebug($"Выполняем подпись под Unix платформой.");
-									signature = SignServiceUnix.Sign(content.Content, certificate);
+									if (SignServiceUtils.IsUnix)
+									{
+										log.LogDebug($"Выполняем подпись под Unix платформой.");
+										signature = SignServiceUnix.Sign(content.Content, certificate);
+									}
+									else
+									{
+										log.LogDebug($"Выполняем подпись под Windows платформой.");
+										signature = SignServiceWin.Sign(content.Content, certificate);
+									}
 								}
-								else
+								catch(Exception ex)
 								{
-									log.LogDebug($"Выполняем подпись под Windows платформой.");
-									signature = SignServiceWin.Sign(content.Content, certificate);
+									throw new Exception($"Ошибка при вычислении подписи для вложения. {ex.Message}.");
 								}
 
 								header.SignaturePKCS7 = signature;
@@ -258,20 +375,39 @@ namespace SignService.Smev.XmlSigners
 
 					if (changed)
 					{
-						log.LogDebug($"Пытаемся получить значение prefixForSerialize.");
-						string prefixForSerialize = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+						string prefixForSerialize = string.Empty;
 
-						if (string.IsNullOrEmpty(prefixForSerialize) || string.Compare(prefixForSerialize, "xmlns", true) == 0)
+						try
 						{
-							prefixForSerialize = "";
+							log.LogDebug($"Пытаемся получить значение prefixForSerialize.");
+							prefixForSerialize = SoapDSigUtil.FindPrefix(doc.DocumentElement, NamespaceUri.Smev3TypesBasic);
+
+							if (string.IsNullOrEmpty(prefixForSerialize) || string.Compare(prefixForSerialize, "xmlns", true) == 0)
+							{
+								prefixForSerialize = "";
+							}
+
+							log.LogDebug($"Полученное значение prefixForSerialize: {prefixForSerialize}.");
+						}
+						catch(Exception ex)
+						{
+							throw new Exception($"Ошибка при попытке получить значение префикса. {ex.Message}.");
 						}
 
-						log.LogDebug($"Полученное значение prefixForSerialize: {prefixForSerialize}.");
+						try
+						{
+							log.LogDebug($"Пытаемся обновить список вложений.");
 
-						log.LogDebug($"Пытаемся обновить список вложений.");
-						XmlElement attachmentHeaderListNew = this.SerializeToXmlElement(headerList, NamespaceUri.Smev3TypesBasic, prefixForSerialize);
-						attachmentHeaderListNew = doc.ImportNode(attachmentHeaderListNew, true) as XmlElement;
-						attachmentHeaderList.ParentNode.ReplaceChild(attachmentHeaderListNew, attachmentHeaderList);
+							XmlElement attachmentHeaderListNew = this.SerializeToXmlElement(headerList, NamespaceUri.Smev3TypesBasic, prefixForSerialize);
+							attachmentHeaderListNew = doc.ImportNode(attachmentHeaderListNew, true) as XmlElement;
+							attachmentHeaderList.ParentNode.ReplaceChild(attachmentHeaderListNew, attachmentHeaderList);
+
+							log.LogDebug("Список вложений успешно обновлен.");
+						}
+						catch(Exception ex)
+						{
+							throw new Exception($"Ошибка при попытке обновить подписанные вложения. {ex.Message}.");
+						}
 					}
 				}
 			}
