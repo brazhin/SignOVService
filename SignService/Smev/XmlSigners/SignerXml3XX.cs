@@ -24,9 +24,6 @@ namespace SignService.Smev.XmlSigners
 		private readonly ILogger<SignerXml3XX> log;
 		private const string xmldsigPrefix = "ds";
 
-		private readonly string mrNamespace;
-		private readonly string securityNamespace;
-		
 		private string tagForSign;
 		private string tagForSignNamespaceUri = string.Empty;
 		private string tagForRequestNamespaceUri = string.Empty;
@@ -38,6 +35,10 @@ namespace SignService.Smev.XmlSigners
 		public SignedTag ElemForSign { get; set; } = SignedTag.Body;
 		public bool SignWithId { get; set; } = true;
 
+		/// <summary>
+		/// Конструктор класса
+		/// </summary>
+		/// <param name="loggerFactory"></param>
 		internal SignerXml3XX(ILoggerFactory loggerFactory)
 		{
 			this.log = loggerFactory.CreateLogger<SignerXml3XX>();
