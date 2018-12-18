@@ -1,10 +1,10 @@
-﻿using SignOVService.Model.Smev;
+﻿using SignService;
 
 namespace SignOVService.Model
 {
 	public class RequestSignOV
 	{
-		public MR Mr { get; set; }
+		public Mr Mr { get; set; }
 		public string Soap { get; set; }
 		public string Thumbprint { get; set; }
 	}

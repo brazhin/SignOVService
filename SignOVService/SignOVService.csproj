@@ -20,6 +20,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.5.1" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="4.5.0" />
+    <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,21 +34,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SignService\SignService.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Model\Smev\Sign\NamespaceUri.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>NamespaceUri.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Model\Smev\Sign\NamespaceUri.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>NamespaceUri.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
 
   <Target Name="DebugRunWebpack" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('wwwroot\dist') ">
