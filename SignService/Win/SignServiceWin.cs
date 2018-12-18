@@ -75,7 +75,7 @@ namespace SignService.Win
 		internal string SignSoap(string xml, Mr mr, string thumbprint)
 		{
 			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
-			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
+			var signer = SignerSoapHelper.CreateSigner(mr, loggerFactory);
 
 			var doc = new XmlDocument();
 

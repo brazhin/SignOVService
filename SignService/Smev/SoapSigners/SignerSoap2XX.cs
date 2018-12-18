@@ -14,9 +14,9 @@ namespace SignService.Smev.SoapSigners
 	/// <summary>
 	/// Реализация подписи XML для СМЭВ2
 	/// </summary>
-	internal class SignerXml2XX : ISignerXml
+	internal class SignerSoap2XX : ISignerXml
 	{
-		private readonly ILogger<SignerXml2XX> log;
+		private readonly ILogger<SignerSoap2XX> log;
 		private const string xmldsigPrefix = "ds";
 
 		private readonly Mr mrVersion;
@@ -39,7 +39,7 @@ namespace SignService.Smev.SoapSigners
 		/// </summary>
 		/// <param name="mr"></param>
 		/// <param name="loggerFactory"></param>
-		internal SignerXml2XX(Mr mr, ILoggerFactory loggerFactory)
+		internal SignerSoap2XX(Mr mr, ILoggerFactory loggerFactory)
 		{
 			this.mrVersion = mr;
 
@@ -58,7 +58,7 @@ namespace SignService.Smev.SoapSigners
 				throw new ArgumentException($"Неподдерживаемая версия МР: {mr}.");
 			}
 
-			this.log = loggerFactory.CreateLogger<SignerXml2XX>();
+			this.log = loggerFactory.CreateLogger<SignerSoap2XX>();
 		}
 
 		public SignedTag ElemForSign { get; set; } = SignedTag.Body;

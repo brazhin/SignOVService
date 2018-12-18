@@ -19,9 +19,9 @@ namespace SignService.Smev.SoapSigners
 	/// <summary>
 	/// Реализация подписи XML для СМЭВ3 по схеме 1.1
 	/// </summary>
-	internal class SignerXml3XX : ISignerXml
+	internal class SignerSoap3XX : ISignerXml
 	{
-		private readonly ILogger<SignerXml3XX> log;
+		private readonly ILogger<SignerSoap3XX> log;
 		private const string xmldsigPrefix = "ds";
 
 		private string tagForSign;
@@ -39,9 +39,9 @@ namespace SignService.Smev.SoapSigners
 		/// Конструктор класса
 		/// </summary>
 		/// <param name="loggerFactory"></param>
-		internal SignerXml3XX(ILoggerFactory loggerFactory)
+		internal SignerSoap3XX(ILoggerFactory loggerFactory)
 		{
-			this.log = loggerFactory.CreateLogger<SignerXml3XX>();
+			this.log = loggerFactory.CreateLogger<SignerSoap3XX>();
 		}
 
 		/// <summary>
