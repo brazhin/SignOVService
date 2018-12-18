@@ -288,19 +288,65 @@ namespace SignService.Win
 		[SecurityCritical]
 		internal IntPtr FindCertificate(string thumbprint)
 		{
-			using(var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-			{
-				store.Open(OpenFlags.ReadOnly);
-				var cert = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
-				store.Close();
+			IntPtr handleSysStore = IntPtr.Zero;
+			IntPtr handleCert = IntPtr.Zero;
 
-				if(cert == null || cert.Count <= 0)
+			// Формируем параметр для метода поиска
+			CApiExtConst.CRYPT_HASH_BLOB hashb = new CApiExtConst.CRYPT_HASH_BLOB();
+
+			try
+			{
+				log.LogDebug($"Пытаемся открыть 'MY' хранилище сертификатов для Текущего пользователя.");
+
+				// Открываем хранилище сертификатов
+				handleSysStore = CApiExtWin.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "MY");
+
+				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
 				{
-					log.LogError($"Сертификат с указанным thumbprint: {thumbprint} не найден в личном хранилище пользователя.");
-					throw new CryptographicException($"Сертификат с указанным thumbprint: {thumbprint} не найден в личном хранилище пользователя.");
+					log.LogError("Не удалось открыть хранилище 'MY' для текущего пользователя.");
+					throw new CryptographicException("Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя.");
 				}
 
-				return cert[0].Handle;
+				log.LogDebug($"Личное хранилище сертификатов для Текущего пользователя успешно открыто.");
+				log.LogDebug($"Пытаемся преобразовать значение Thumbprint в массив байт.");
+
+				// Получаем значение thumbprint в виде массива байт
+				byte[] sha1Hash = SignServiceUtils.HexStringToBinary(thumbprint);
+
+				log.LogDebug("Значение Thumbprint успешно преобразовано в массив байт.");
+				log.LogDebug("Пытаемся разместить бинарное значение Thumbprint в неуправляемой памяти.");
+
+				try
+				{
+					hashb.pbData = Marshal.AllocHGlobal(thumbprint.Length);
+					Marshal.Copy(sha1Hash, 0, hashb.pbData, sha1Hash.Length);
+					hashb.cbData = sha1Hash.Length;
+				}
+				catch (Exception ex)
+				{
+					log.LogError($"Ошибка при попытке разместить значение Thumbprint в неуправляемой памяти. {ex.Message}.");
+					Marshal.FreeHGlobal(hashb.pbData);
+					throw new CryptographicException($"Ошибка при попытке разместить значение Thumbprint в неуправляемой памяти. {ex.Message}.");
+				}
+
+				log.LogDebug("Бинарное значение Thumbprint успешно размещено в неуправляемой памяти.");
+				log.LogDebug("Пытаемся найти сертификат по Thumbprint данным в неуправляемой памяти.");
+
+				// Ищем сертификат в хранилище
+				handleCert = CApiExtWin.CertFindCertificateInStore(handleSysStore, CApiExtConst.PKCS_7_OR_X509_ASN_ENCODING, 0, CApiExtConst.CERT_FIND_SHA1_HASH, ref hashb, IntPtr.Zero);
+
+				if (handleCert == IntPtr.Zero || handleCert == null)
+				{
+					log.LogError("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
+					throw new CryptographicException("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
+				}
+
+				return handleCert;
+			}
+			finally
+			{
+				Marshal.FreeHGlobal(hashb.pbData);
+				CApiExtWin.CertCloseStore(handleSysStore, 0);
 			}
 		}
 
