@@ -3,7 +3,7 @@ using System.Xml;
 
 namespace SignService.Smev.SoapSigners
 {
-	internal interface ISignerXml
+	internal interface ISignerSoap
 	{
 		XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate);
 

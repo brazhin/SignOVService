@@ -8,7 +8,7 @@ namespace SignService.Smev.SoapSigners
 	/// </summary>
 	internal static class SignerSoapHelper
 	{
-		internal static ISignerXml CreateSigner(Mr mr, ILoggerFactory loggerFactory)
+		internal static ISignerSoap CreateSigner(Mr mr, ILoggerFactory loggerFactory)
 		{
 			if (mr == Mr.MR244)
 				return new SignerSoap2XX(Mr.MR244, loggerFactory);

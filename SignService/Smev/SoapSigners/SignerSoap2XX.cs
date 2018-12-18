@@ -14,7 +14,7 @@ namespace SignService.Smev.SoapSigners
 	/// <summary>
 	/// Реализация подписи XML для СМЭВ2
 	/// </summary>
-	internal class SignerSoap2XX : ISignerXml
+	internal class SignerSoap2XX : ISignerSoap
 	{
 		private readonly ILogger<SignerSoap2XX> log;
 		private const string xmldsigPrefix = "ds";
