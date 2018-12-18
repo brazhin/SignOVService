@@ -268,6 +268,10 @@ namespace SignService.Smev.SoapSigners
 				log.LogError($"Ошибка при попытке подписать XML. {ex.Message}.");
 				throw new CryptographicException($"Ошибка при попытке подписать XML для версии {mrText[mrVersion]}. {ex.Message}.");
 			}
+			finally
+			{
+				SignServiceUtils.FreeHandleCertificate(certificate);
+			}
 		}
 
 		/// <summary>
