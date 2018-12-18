@@ -121,6 +121,7 @@ namespace SignOVService.Controllers
 
 				var stream = new MemoryStream();
 				file.CopyTo(stream);
+				stream.Position = 0;
 
 				string thumbprint = form["thumbprint"];
 
@@ -132,7 +133,7 @@ namespace SignOVService.Controllers
 				// Получаем сертификат на основе которого рассчитываем хэш
 				var certHandle = provider.GetCertificateHandle(thumbprint);
 
-				// Подписываем данные
+				// Подписываем данные, необходимо убедиться что значение Stream.Position = 0
 				var hash = provider.CreateHash(stream, certHandle);
 
 				return Ok(hash);
