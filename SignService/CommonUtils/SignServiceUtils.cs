@@ -139,6 +139,11 @@ namespace SignService.CommonUtils
 		{
 			try
 			{
+				if(certHandle == IntPtr.Zero)
+				{
+					throw new Exception("Ошибка при попытке получить Handle сертификата.");
+				}
+
 				var certContext = Marshal.PtrToStructure<CERT_CONTEXT>(certHandle);
 				var certInfo = Marshal.PtrToStructure<CERT_INFO>(certContext.pCertInfo);
 				var publicKeyAlg = certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId;
