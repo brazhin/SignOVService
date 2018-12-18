@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SignOVService.Model;
 using SignService;
-using SignService.CommonUtils;
 
 namespace SignOVService.Controllers
 {
@@ -196,27 +195,6 @@ namespace SignOVService.Controllers
 			catch (Exception ex)
 			{
 				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
-			}
-		}
-
-		[HttpGet("trustedtest/{thumbprint}")] //TODO: delete
-		public IActionResult TestGetX509(string thumbprint)
-		{
-			try
-			{
-				var cert = provider.GetCertificateHandle(thumbprint);
-				var list = provider.TestGetX509();
-
-				if (list.Contains(SignServiceUtils.GetX509Certificate2(cert)))
-				{
-					return Ok(true);
-				}
-
-				return Ok(false);
-			}
-			catch(Exception ex)
-			{
-				return BadRequest(ex.Message);
 			}
 		}
 	}
