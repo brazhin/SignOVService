@@ -11,7 +11,7 @@ using SignService;
 
 namespace SignOVService.Controllers
 {
-	[Route("tests")]
+	[Route("cryptography")]
 	public class TestsController : Controller
 	{
 		private readonly SignServiceProvider provider;
@@ -25,7 +25,7 @@ namespace SignOVService.Controllers
 		/// Тестовый метод создания открепленной подписи
 		/// </summary>
 		/// <returns></returns>
-		[HttpPost("createsign")]
+		[HttpPost("signdata")]
 		public IActionResult TestSignServiceLib()
 		{
 			try
@@ -148,8 +148,8 @@ namespace SignOVService.Controllers
 		/// </summary>
 		/// <param name=""></param>
 		/// <returns></returns>
-		[HttpPost("signxml")]
-		public IActionResult SignXml([FromBody] RequestSignOV request)
+		[HttpPost("signsoap")]
+		public IActionResult SignSoap([FromBody] RequestSignOV request)
 		{
 			try
 			{
@@ -167,8 +167,8 @@ namespace SignOVService.Controllers
 		/// </summary>
 		/// <param name=""></param>
 		/// <returns></returns>
-		[HttpPost("signxmlfile")]
-		public IActionResult SignXml()
+		[HttpPost("signsoapfile")]
+		public IActionResult SignSoap()
 		{
 			try
 			{
