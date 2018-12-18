@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-//using SignOVService.Model.Project;
 using SignService;
 
 namespace SignOVService
@@ -23,15 +21,8 @@ namespace SignOVService
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices(IServiceCollection services)
 		{
-			//this.sp = services.BuildServiceProvider();
-			//ILoggerFactory loggerFactory = this.sp.GetService<ILoggerFactory>();
-
 			services.AddMvc();
 			services.AddTransient<SignServiceProvider>();
-
-			//services.AddSingleton<SignServiceSettings>(fabric => GetSignServiceSettings());
-
-			//services.BuildServiceProvider();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -64,13 +55,5 @@ namespace SignOVService
 					defaults: new { controller = "Home", action = "Index" });
 			});
 		}
-
-		//private SignServiceSettings GetSignServiceSettings()
-		//{
-		//	var settings = new SignServiceSettings();
-		//	Configuration.GetSection("SignServiceSettings").Bind(settings);
-
-		//	return settings;
-		//}
 	}
 }
