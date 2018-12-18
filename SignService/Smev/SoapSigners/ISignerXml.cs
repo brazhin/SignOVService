@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Xml;
 
-namespace SignService.Smev.XmlSigners
+namespace SignService.Smev.SoapSigners
 {
 	internal interface ISignerXml
 	{

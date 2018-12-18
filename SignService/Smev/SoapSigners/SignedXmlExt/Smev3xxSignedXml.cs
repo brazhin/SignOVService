@@ -1,5 +1,5 @@
 ﻿using SignService.CommonUtils;
-using SignService.Smev.Utils;
+using SignService.Smev.SmevTransform;
 using SignService.Unix.Gost;
 using SignService.Unix.Utils;
 using SignService.Win.Gost;
@@ -10,75 +10,28 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 
-namespace SignService.Smev.XmlSigners.SignedXmlExt
+namespace SignService.Smev.SoapSigners.SignedXmlExt
 {
 	/// <summary>
 	/// Класс для подписи XML
 	/// </summary>
-	internal class SmevSignedXml : SignedXml
+	internal class Smev3xxSignedXml : SignedXml
 	{
-		public SmevSignedXml()
+		private XmlElement containingDocument;
+
+		internal Smev3xxSignedXml()
 		{
-			this.NamespaceForReference = NamespaceUri.OasisWSSecurityUtility;
+
 		}
 
-		public SmevSignedXml(XmlDocument document)
-			: base(document)
+		internal Smev3xxSignedXml(XmlDocument document) :
+			base(document)
 		{
-			this.NamespaceForReference = NamespaceUri.OasisWSSecurityUtility;
-		}
-
-		public string NamespaceForReference { get; set; }
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="document"></param>
-		/// <param name="idValue"></param>
-		/// <returns></returns>
-		public override XmlElement GetIdElement(XmlDocument document, string idValue)
-		{
-			XmlNamespaceManager nsmgr = new XmlNamespaceManager(document.NameTable);
-			XmlElement element = null;
-
-			if (string.IsNullOrEmpty(idValue) == false)
-			{
-				string prefix = SoapDSigUtil.FindPrefix(document.DocumentElement, this.NamespaceForReference);
-
-				if (string.IsNullOrEmpty(prefix))
-				{
-					prefix = "wsu";
-				}
-
-				nsmgr.AddNamespace(prefix, this.NamespaceForReference);
-
-				string findString = string.Format("//*[(@Id='{0}' and namespace-uri()='{1}') or (@{2}:Id='{0}')]", idValue, this.NamespaceForReference, prefix);
-				element = document.SelectSingleNode(findString, nsmgr) as XmlElement;
-			}
-			else if (document.DocumentElement != null)
-			{
-				element = document.DocumentElement;
-			}
-
-			return element;
+			containingDocument = document.DocumentElement;
 		}
 
 		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="prefix"></param>
-		public void ComputeSignature(string prefix)
-		{
-			this.BuildDigestedReferences();
-			SignatureDescription description = CryptoConfig.CreateFromName(this.SignedInfo.SignatureMethod) as SignatureDescription;
-			HashAlgorithm hash = description.CreateDigest();
-
-			GetDigest(hash, prefix);
-			this.m_signature.SignatureValue = description.CreateFormatter(this.SigningKey).CreateSignature(hash);
-		}
-
-		/// <summary>
-		/// 
+		/// Метод вычисления подписи без использования закрытого ключа
 		/// </summary>
 		/// <param name="prefix"></param>
 		/// <param name="certificate"></param>
@@ -95,6 +48,8 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 				CryptoConfig.AddAlgorithm(typeof(Gost2012_256), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256" });
 			}
 
+			CryptoConfig.AddAlgorithm(typeof(SmevTransformAlg), new string[1] { SmevTransformAlg.ALGORITHM_URI });
+
 			BuildDigestedReferences();
 
 			int algId = 0;
@@ -104,7 +59,7 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 			uint keySpec = CApiExtConst.AT_SIGNATURE;
 			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? UnixExtUtil.GetHandler(certificate, out keySpec) : Win32ExtUtil.GetHandler(certificate, out keySpec);
 
-			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) :
+			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) : 
 				Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
 
 			Array.Reverse(sign);
@@ -116,11 +71,40 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 		/// <summary>
 		/// 
 		/// </summary>
-		private void BuildDigestedReferences()
+		/// <param name="document"></param>
+		/// <param name="idValue"></param>
+		/// <returns></returns>
+		public override XmlElement GetIdElement(XmlDocument document, string idValue)
 		{
-			Type t = typeof(SignedXml);
-			MethodInfo m = t.GetMethod("BuildDigestedReferences", BindingFlags.NonPublic | BindingFlags.Instance);
-			m.Invoke(this, new object[] { });
+			XmlNamespaceManager nsmgr = new XmlNamespaceManager(document.NameTable);
+			nsmgr.AddNamespace("smev3", NamespaceUri.Smev3Types);
+			XmlElement result = document.SelectSingleNode("//*[@smev3:Id='" + idValue + "']", nsmgr) as XmlElement;
+
+			if (result == null)
+			{
+				XmlNamespaceManager nsmgr2 = new XmlNamespaceManager(document.NameTable);
+				nsmgr2.AddNamespace("smev3", NamespaceUri.Smev3TypesBasic);
+				result = document.SelectSingleNode("//*[@smev3:Id='" + idValue + "']", nsmgr2) as XmlElement;
+			}
+
+			if (result == null)
+			{
+				result = document.SelectSingleNode("//*[@Id='" + idValue + "']", nsmgr) as XmlElement;
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="prefix"></param>
+		/// <returns></returns>
+		internal XmlElement GetXml(string prefix)
+		{
+			XmlElement e = this.GetXml();
+			SetPrefix(prefix, e);
+			return e;
 		}
 
 		/// <summary>
@@ -136,7 +120,7 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 			document.AppendChild(document.ImportNode(e, true));
 
 			Transform canonicalizationMethodObject = this.SignedInfo.CanonicalizationMethodObject;
-			SetPrefix(prefix, document);
+			this.SetPrefix(prefix, document);
 
 			canonicalizationMethodObject.LoadInput(document);
 			canonicalizationMethodObject.GetDigestedOutput(hash);
@@ -157,13 +141,11 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="prefix"></param>
-		/// <returns></returns>
-		public XmlElement GetXml(string prefix)
+		private void BuildDigestedReferences()
 		{
-			XmlElement e = this.GetXml();
-			SetPrefix(prefix, e);
-			return e;
+			Type t = typeof(SignedXml);
+			MethodInfo m = t.GetMethod("BuildDigestedReferences", BindingFlags.NonPublic | BindingFlags.Instance);
+			m.Invoke(this, new object[] { });
 		}
 	}
 }

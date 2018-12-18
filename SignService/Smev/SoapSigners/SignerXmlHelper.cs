@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 
-namespace SignService.Smev.XmlSigners
+namespace SignService.Smev.SoapSigners
 {
 	/// <summary>
 	/// Класс для создания клиентов подписи для определенной версии МР

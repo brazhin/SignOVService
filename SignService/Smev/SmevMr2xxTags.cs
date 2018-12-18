@@ -1,4 +1,4 @@
-﻿using SignService.Smev.XmlSigners.SignedXmlExt;
+﻿using SignService.Smev.SoapSigners.SignedXmlExt;
 
 namespace SignService.Smev
 {

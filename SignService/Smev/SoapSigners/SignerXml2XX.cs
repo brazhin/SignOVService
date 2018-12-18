@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
 using SignService.Smev.Utils;
-using SignService.Smev.XmlSigners.SignedXmlExt;
+using SignService.Smev.SoapSigners.SignedXmlExt;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -9,7 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 
-namespace SignService.Smev.XmlSigners
+namespace SignService.Smev.SoapSigners
 {
 	/// <summary>
 	/// Реализация подписи XML для СМЭВ2

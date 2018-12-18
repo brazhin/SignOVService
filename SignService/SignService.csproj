@@ -26,7 +26,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SmevAttributes.resx</DependentUpon>
     </Compile>
-    <Compile Update="Smev\XmlSigners\SignedXmlExt\NamespaceUri.Designer.cs">
+    <Compile Update="Smev\SoapSigners\SignedXmlExt\NamespaceUri.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>NamespaceUri.resx</DependentUpon>
@@ -38,7 +38,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>SmevAttributes.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Smev\XmlSigners\SignedXmlExt\NamespaceUri.resx">
+    <EmbeddedResource Update="Smev\SoapSigners\SignedXmlExt\NamespaceUri.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>NamespaceUri.Designer.cs</LastGenOutput>
     </EmbeddedResource>

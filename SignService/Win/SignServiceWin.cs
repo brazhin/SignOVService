@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using SignService.CommonUtils;
-using SignService.Smev.XmlSigners;
+using SignService.Smev.SoapSigners;
 using SignService.Win.Api;
 using SignService.Win.Gost;
 using System;

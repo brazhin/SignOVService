@@ -1,7 +1,7 @@
 ﻿using SignService.CommonUtils;
 using SignService.Smev.SmevTransform;
-using SignService.Smev.XmlSigners;
-using SignService.Smev.XmlSigners.SignedXmlExt;
+using SignService.Smev.SoapSigners;
+using SignService.Smev.SoapSigners.SignedXmlExt;
 using System;
 using System.Globalization;
 using System.Security.Cryptography.Xml;

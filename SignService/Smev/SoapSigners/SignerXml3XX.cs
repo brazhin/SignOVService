@@ -2,7 +2,7 @@
 using SignService.CommonUtils;
 using SignService.Smev.Services;
 using SignService.Smev.Utils;
-using SignService.Smev.XmlSigners.SignedXmlExt;
+using SignService.Smev.SoapSigners.SignedXmlExt;
 using SignService.Unix;
 using SignService.Win;
 using System;
@@ -14,7 +14,7 @@ using System.Security.Cryptography.Xml;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace SignService.Smev.XmlSigners
+namespace SignService.Smev.SoapSigners
 {
 	/// <summary>
 	/// Реализация подписи XML для СМЭВ3 по схеме 1.1

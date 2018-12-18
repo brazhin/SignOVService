@@ -1,4 +1,4 @@
-﻿namespace SignService.Smev.XmlSigners
+﻿namespace SignService.Smev.SoapSigners
 {
 	public enum SignedTag
 	{

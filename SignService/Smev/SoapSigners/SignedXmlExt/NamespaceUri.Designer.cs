@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SignService.Smev.XmlSigners.SignedXmlExt {
+namespace SignService.Smev.SoapSigners.SignedXmlExt {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace SignService.Smev.XmlSigners.SignedXmlExt {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SignService.Smev.XmlSigners.SignedXmlExt.NamespaceUri", typeof(NamespaceUri).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SignService.Smev.SoapSigners.SignedXmlExt.NamespaceUri", typeof(NamespaceUri).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
