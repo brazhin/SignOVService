@@ -119,8 +119,8 @@ namespace SignService
 
 			if (SignServiceUtils.IsUnix)
 			{
-				log.LogError("GetTrustedCertificates failed. Отсутствует реализация для Unix системы.");
-				throw new Exception("Отсутствует реализация для Unix системы.");
+				var unixService = new SignServiceUnix(loggerFactory);
+				confCertificates = unixService.GetTrustedCertificates();
 			}
 			else
 			{
