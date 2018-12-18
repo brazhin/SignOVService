@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SignOVService.Model;
-using SignOVService.Model.Cryptography;
 using SignService;
+using SignService.CommonUtils;
 
 namespace SignOVService.Controllers
 {
@@ -154,7 +154,7 @@ namespace SignOVService.Controllers
 		{
 			try
 			{
-				var signedXml = provider.SignXml(request.Soap, request.Mr, request.Thumbprint);
+				var signedXml = provider.SignSoap(request.Soap, request.Mr, request.Thumbprint);
 				return Ok(signedXml);
 			}
 			catch(Exception ex)
@@ -190,12 +190,33 @@ namespace SignOVService.Controllers
 					xml = Encoding.UTF8.GetString(body);
 				}
 
-				var signedXml = provider.SignXml(xml, (Mr)mr, thumbprint);
+				var signedXml = provider.SignSoap(xml, (Mr)mr, thumbprint);
 				return Ok(signedXml);
 			}
 			catch (Exception ex)
 			{
 				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
+			}
+		}
+
+		[HttpGet("trustedtest/{thumbprint}")] //TODO: delete
+		public IActionResult TestGetX509(string thumbprint)
+		{
+			try
+			{
+				var cert = provider.GetCertificateHandle(thumbprint);
+				var list = provider.TestGetX509();
+
+				if (list.Contains(SignServiceUtils.GetX509Certificate2(cert)))
+				{
+					return Ok(true);
+				}
+
+				return Ok(false);
+			}
+			catch(Exception ex)
+			{
+				return BadRequest(ex.Message);
 			}
 		}
 	}

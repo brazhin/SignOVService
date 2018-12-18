@@ -31,7 +31,7 @@ namespace SignService
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		public string SignXml(string xml, Mr mr, string thumbprint)
+		public string SignSoap(string xml, Mr mr, string thumbprint)
 		{
 			string signedXml = string.Empty;
 
@@ -39,13 +39,13 @@ namespace SignService
 			{
 				log.LogDebug($"Попытка выполнить метод подписания XML под Unix платформой.");
 				var unixService = new SignServiceUnix(loggerFactory);
-				signedXml = unixService.SignXml(xml, mr, thumbprint);
+				signedXml = unixService.SignSoap(xml, mr, thumbprint);
 			}
 			else
 			{
 				log.LogDebug($"Попытка выполнить метод подписания XML под Windows платформой.");
 				var winService = new SignServiceWin(loggerFactory);
-				signedXml = winService.SignXml(xml, mr, thumbprint);
+				signedXml = winService.SignSoap(xml, mr, thumbprint);
 			}
 
 			return signedXml;

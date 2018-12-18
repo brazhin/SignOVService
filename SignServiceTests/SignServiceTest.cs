@@ -93,7 +93,7 @@ namespace SignServiceTests
 			foreach (var file in files)
 			{
 				var data = Utils.GetTextFromFile(file);
-				var signedXml = provider.SignXml(data, mr, thumbprint);
+				var signedXml = provider.SignSoap(data, mr, thumbprint);
 			}
 		}
 	}

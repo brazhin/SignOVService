@@ -14,6 +14,9 @@ using static SignService.CApiExtConst;
 
 namespace SignService.Win
 {
+	/// <summary>
+	/// Класс реализующий выполнение криптографических операций под Windows платформой
+	/// </summary>
 	internal class SignServiceWin
 	{
 		private ILoggerFactory loggerFactory;
@@ -69,7 +72,7 @@ namespace SignService.Win
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		internal string SignXml(string xml, Mr mr, string thumbprint)
+		internal string SignSoap(string xml, Mr mr, string thumbprint)
 		{
 			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
 			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
@@ -270,6 +273,7 @@ namespace SignService.Win
 		/// <param name="data"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
+		[SecurityCritical]
 		internal byte[] Sign(byte[] data, string thumbprint)
 		{
 			IntPtr hCert = FindCertificate(thumbprint);

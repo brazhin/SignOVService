@@ -35,7 +35,7 @@ namespace SignService.Unix
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		internal string SignXml(string xml, Mr mr, string thumbprint)
+		internal string SignSoap(string xml, Mr mr, string thumbprint)
 		{
 			log.LogDebug($"Выполняем метод подписи XML согласно версии МР: {mr}.");
 			var signer = SignerXmlHelper.CreateSigner(mr, loggerFactory);
