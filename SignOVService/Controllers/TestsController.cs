@@ -49,7 +49,7 @@ namespace SignOVService.Controllers
 				// Подписываем данные
 				var sign = provider.Sign(stream.ToArray(), thumbprint);
 
-				return File(sign, "application/x-msdownload", "sign.sig");
+				return Ok(sign);
 			}
 			catch (Exception ex)
 			{
