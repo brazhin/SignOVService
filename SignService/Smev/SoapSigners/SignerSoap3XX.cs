@@ -57,7 +57,6 @@ namespace SignService.Smev.SoapSigners
 				// Подписываем вложения
 				log.LogDebug("Пытаемся подписать вложения.");
 				doc = SignAttachmentsOv(doc, certificate);
-				doc.Save("signed.xml");
 			}
 			catch (Exception ex)
 			{
