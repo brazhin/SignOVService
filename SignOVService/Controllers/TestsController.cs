@@ -25,8 +25,8 @@ namespace SignOVService.Controllers
 		/// Тестовый метод создания открепленной подписи
 		/// </summary>
 		/// <returns></returns>
-		[HttpPost("signdata")]
-		public IActionResult TestSignServiceLib()
+		[HttpPost("signdatafile")]
+		public IActionResult SignDataFile()
 		{
 			try
 			{
@@ -58,11 +58,31 @@ namespace SignOVService.Controllers
 		}
 
 		/// <summary>
+		/// Метод подписи данных
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
+		[HttpPost("signdata")]
+		public IActionResult SignDataRequest([FromBody] SignDataRequestDto request)
+		{
+			try
+			{
+				// Подписываем данные
+				var sign = provider.Sign(request.Data, request.Thumbprint);
+				return Ok(Convert.ToBase64String(sign));
+			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
+			}
+		}
+
+		/// <summary>
 		/// Тестовый метод создания открепленной подписи
 		/// </summary>
 		/// <returns></returns>
 		[HttpPost("getsignfile")]
-		public IActionResult SignDataRetFile()
+		public IActionResult GetSignFile()
 		{
 			try
 			{
@@ -92,6 +112,7 @@ namespace SignOVService.Controllers
 				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
 			}
 		}
+
 		/// <summary>
 		/// Тестовый метод проверки открепленной подписи
 		/// </summary>
@@ -204,7 +225,7 @@ namespace SignOVService.Controllers
 		/// <param name=""></param>
 		/// <returns></returns>
 		[HttpPost("signsoapfile")]
-		public IActionResult SignSoap()
+		public IActionResult SignSoapFile()
 		{
 			try
 			{
