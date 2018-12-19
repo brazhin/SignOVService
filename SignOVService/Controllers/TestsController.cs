@@ -58,6 +58,41 @@ namespace SignOVService.Controllers
 		}
 
 		/// <summary>
+		/// Тестовый метод создания открепленной подписи
+		/// </summary>
+		/// <returns></returns>
+		[HttpPost("getsignfile")]
+		public IActionResult SignDataRetFile()
+		{
+			try
+			{
+				if (HttpContext.Request.Form.Files.Count <= 0)
+					return BadRequest("Файлов для подписания не обнаружено.");
+
+				var form = HttpContext.Request.Form;
+				var file = HttpContext.Request.Form.Files[0];
+
+				var stream = new MemoryStream();
+				file.CopyTo(stream);
+
+				string thumbprint = form["thumbprint"];
+
+				if (string.IsNullOrEmpty(thumbprint))
+				{
+					return BadRequest("Не удалось получить значение thumbprint для поиска сертификата.");
+				}
+
+				// Подписываем данные
+				var sign = provider.Sign(stream.ToArray(), thumbprint);
+
+				return File(sign, "application/x-msdownload", "sign.sig");
+			}
+			catch (Exception ex)
+			{
+				return BadRequest($"Ошибка при выполнении запроса: {ex.Message}.");
+			}
+		}
+		/// <summary>
 		/// Тестовый метод проверки открепленной подписи
 		/// </summary>
 		/// <returns></returns>
