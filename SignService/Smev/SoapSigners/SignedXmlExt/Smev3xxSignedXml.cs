@@ -145,7 +145,15 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 		{
 			Type t = typeof(SignedXml);
 			MethodInfo m = t.GetMethod("BuildDigestedReferences", BindingFlags.NonPublic | BindingFlags.Instance);
-			m.Invoke(this, new object[] { });
+
+			try
+			{
+				m.Invoke(this, new object[] { });
+			}
+			catch(Exception ex)
+			{
+				throw ex.InnerException ?? ex;
+			}
 		}
 	}
 }

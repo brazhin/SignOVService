@@ -274,8 +274,8 @@ namespace SignService.Unix
 			}
 			else
 			{
-				log.LogDebug($"Неподдерживаемый алгоритм хэширования: {algId}.");
-				throw new CryptographicException($"Неподдерживаемый алгоритм хэширования: {algId}.");
+				log.LogError($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам.");
+				throw new Exception($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам.");
 			}
 
 			if (hashResult == null || hashResult.Length <= 0)

@@ -1,8 +1,6 @@
-﻿using SignService.Unix.Api;
-using SignService.Unix.Gost;
-using SignService.Win.Gost;
+﻿using SignService.CommonUtils;
+using SignService.Unix.Api;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -18,8 +16,6 @@ namespace SignService.Unix.Utils
 
 		private static IntPtr unsafeGost2001ProvHandle;
 		private static IntPtr unsafeGost2012_256ProvHandle;
-		private static IntPtr unsafeGost2012_512ProvHandle;
-		private static IntPtr unsafeMsProvHandle;
 
 		private static object InternalSyncObject
 		{
@@ -101,7 +97,8 @@ namespace SignService.Unix.Utils
 					{
 						if (unsafeGost2012_256ProvHandle == null || unsafeGost2012_256ProvHandle == IntPtr.Zero)
 						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(80));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(false);
+							IntPtr unsafeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							unsafeGost2012_256ProvHandle = unsafeProvHandleCP;
 						}
@@ -109,31 +106,6 @@ namespace SignService.Unix.Utils
 				}
 
 				return unsafeGost2012_256ProvHandle;
-			}
-		}
-
-		/// <summary>
-		/// Метод поиска провайдера поддерживающего ГОСТ 3410-2012-512
-		/// </summary>
-		internal static IntPtr StaticGost2012_512ProvHandle
-		{
-			[SecurityCritical]
-			get
-			{
-				if (unsafeGost2012_512ProvHandle == null || unsafeGost2012_512ProvHandle == IntPtr.Zero)
-				{
-					lock (InternalSyncObject)
-					{
-						if (unsafeGost2012_512ProvHandle == null || unsafeGost2012_512ProvHandle == IntPtr.Zero)
-						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(81));
-							Thread.MemoryBarrier();
-							unsafeGost2012_512ProvHandle = unsafeProvHandleCP;
-						}
-					}
-				}
-
-				return unsafeGost2012_512ProvHandle;
 			}
 		}
 
@@ -151,7 +123,8 @@ namespace SignService.Unix.Utils
 					{
 						if (unsafeGost2001ProvHandle == null || unsafeGost2001ProvHandle == IntPtr.Zero)
 						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(75));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(false);
+							IntPtr unsafeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							unsafeGost2001ProvHandle = unsafeProvHandleCP;
 						}

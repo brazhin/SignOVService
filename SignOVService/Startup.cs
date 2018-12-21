@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SignOVService.Model.Project;
 using SignService;
 
 namespace SignOVService
@@ -10,6 +12,7 @@ namespace SignOVService
 	public class Startup
 	{
 		private ServiceProvider sp;
+		private ISignServiceSettings settings;
 
 		public Startup(IConfiguration configuration)
 		{
@@ -22,7 +25,10 @@ namespace SignOVService
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddMvc();
-			services.AddTransient<SignServiceProvider>();
+			services.AddScoped<SignServiceProvider>((service) => {
+				var signServiceSettings = SignServiceSettingsCreate();
+				return new SignServiceProvider(signServiceSettings.Csp, service.GetService<ILoggerFactory>());
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -54,6 +60,15 @@ namespace SignOVService
 					name: "spa-fallback",
 					defaults: new { controller = "Home", action = "Index" });
 			});
+		}
+
+		private ISignServiceSettings SignServiceSettingsCreate()
+		{
+			if (settings != null) return settings;
+
+			settings = new SignServiceSettings();
+			Configuration.GetSection("SignServiceSettings").Bind(settings);
+			return settings;
 		}
 	}
 }

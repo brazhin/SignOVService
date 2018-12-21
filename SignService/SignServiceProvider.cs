@@ -18,11 +18,19 @@ namespace SignService
 		private readonly ILoggerFactory loggerFactory;
 		private readonly ILogger<SignServiceProvider> log;
 
-		public SignServiceProvider(ILoggerFactory loggerFactory)
+		public SignServiceProvider(CspType csp, ILoggerFactory loggerFactory)
 		{
+			// Задаем тип используемого Криптопровайдера
+			Csp = csp;
+
 			this.loggerFactory = loggerFactory;
 			this.log = loggerFactory.CreateLogger<SignServiceProvider>();
 		}
+
+		/// <summary>
+		/// Тип используемого криптопровайдера
+		/// </summary>
+		internal static CspType Csp { get; private set; }
 
 		/// <summary>
 		/// Метод подписи XML

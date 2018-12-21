@@ -17,6 +17,14 @@ namespace SignService.CommonUtils
 {
 	public static class SignServiceUtils
 	{
+		// Типы провайдеров для ГОСТ 2001
+		private static int provTypeVipNet2001 = 2;
+		private static int provTypeCryptoPro2001 = 75;
+
+		// Типы провайдеров для ГОСТ 2012
+		private static int provTypeVipNet2012 = 77;
+		private static int provTypeCryptoPro2012 = 80;
+
 		/// <summary>
 		/// Соответствие для алгоритмов хэширования плагина КриптоПро
 		/// </summary>
@@ -76,6 +84,26 @@ namespace SignService.CommonUtils
 				int iPlatform = (int)Environment.OSVersion.Platform;
 				return (iPlatform == 4) || (iPlatform == 6) || (iPlatform == 128);
 			}
+		}
+
+		/// <summary>
+		/// Метод для получения параметров CSP
+		/// </summary>
+		/// <param name="isNewGost"></param>
+		/// <returns></returns>
+		internal static CspParameters GetCspParameters(bool isNewGost)
+		{
+			CspParameters cspParameter;
+
+			if (SignServiceProvider.Csp == CspType.VipNet)
+				cspParameter = (isNewGost) ? new CspParameters(provTypeVipNet2012) : new CspParameters(provTypeVipNet2001); // VipNet константы
+			else if (SignServiceProvider.Csp == CspType.CryptoPro)
+				cspParameter = (isNewGost) ? new CspParameters(provTypeCryptoPro2012) : new CspParameters(provTypeCryptoPro2001); // КриптоПро константы
+			else
+				throw new Exception($"Ошибка при попытке определить тип используемого криптопровайдера. " +
+					$"Ожидаемые значения: 0 - для использования КриптоПро CSP или 1 - для использования VipNet CSP. Полученное значение: {SignServiceProvider.Csp}.");
+
+			return cspParameter;
 		}
 
 		/// <summary>
@@ -283,29 +311,6 @@ namespace SignService.CommonUtils
 			}
 
 			return sb.ToString().Replace("-", "").ToLower();
-		}
-
-		/// <summary>
-		/// Метод получения хэш алгоритма по алгоритму публичного ключа //TODO: delete
-		/// </summary>
-		/// <param name="szKeyOid"></param>
-		/// <returns></returns>
-		internal static string GetHashOidByKeyOid(string szKeyOid)
-		{
-			if (szKeyOid == CApiExtConst.szOID_CP_GOST_R3410EL)
-			{
-				return CApiExtConst.szOID_CP_GOST_R3411;
-			}
-			else if (szKeyOid == CApiExtConst.szOID_CP_GOST_R3410_12_256)
-			{
-				return CApiExtConst.szOID_CP_GOST_R3411_12_256;
-			}
-			else if (szKeyOid == CApiExtConst.szOID_CP_GOST_R3410_12_512)
-			{
-				return CApiExtConst.szOID_CP_GOST_R3411_12_512;
-			}
-
-			return null;
 		}
 
 		/// <summary>

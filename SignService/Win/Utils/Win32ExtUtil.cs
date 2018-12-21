@@ -1,4 +1,5 @@
-﻿using SignService.Win.Api;
+﻿using SignService.CommonUtils;
+using SignService.Win.Api;
 using SignService.Win.Handles;
 using System;
 using System.Runtime.InteropServices;
@@ -16,8 +17,6 @@ namespace SignService.Win.Utils
 
 		private static SafeProvHandleCP safeGost2001ProvHandle;
 		private static SafeProvHandleCP safeGost2012_256ProvHandle;
-		private static SafeProvHandleCP safeGost2012_512ProvHandle;
-		private static SafeProvHandleCP safeMsProvHandle;
 
 		private static object InternalSyncObject
 		{
@@ -31,31 +30,6 @@ namespace SignService.Win.Utils
 				}
 
 				return internalSyncObject;
-			}
-		}
-
-		/// <summary>
-		/// Свойство получения провайдера MS
-		/// </summary>
-		internal static SafeProvHandleCP StaticMsProvHandle
-		{
-			[SecurityCritical]
-			get
-			{
-				if (safeMsProvHandle == null)
-				{
-					lock (InternalSyncObject)
-					{
-						if (safeMsProvHandle == null)
-						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(1));
-							Thread.MemoryBarrier();
-							safeMsProvHandle = safeProvHandleCP;
-						}
-					}
-				}
-
-				return safeMsProvHandle;
 			}
 		}
 
@@ -189,7 +163,8 @@ namespace SignService.Win.Utils
 					{
 						if (safeGost2001ProvHandle == null)
 						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(75));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(false);
+							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							safeGost2001ProvHandle = safeProvHandleCP;
 						}
@@ -214,7 +189,8 @@ namespace SignService.Win.Utils
 					{
 						if (safeGost2012_256ProvHandle == null)
 						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(80));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(true);
+							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							safeGost2012_256ProvHandle = safeProvHandleCP;
 						}
@@ -222,31 +198,6 @@ namespace SignService.Win.Utils
 				}
 
 				return safeGost2012_256ProvHandle;
-			}
-		}
-
-		/// <summary>
-		/// Метод поиска провайдера поддерживающего ГОСТ 3410-2012-512
-		/// </summary>
-		internal static SafeProvHandleCP StaticGost2012_512ProvHandle
-		{
-			[SecurityCritical]
-			get
-			{
-				if (safeGost2012_512ProvHandle == null)
-				{
-					lock (InternalSyncObject)
-					{
-						if (safeGost2012_512ProvHandle == null)
-						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(81));
-							Thread.MemoryBarrier();
-							safeGost2012_512ProvHandle = safeProvHandleCP;
-						}
-					}
-				}
-
-				return safeGost2012_512ProvHandle;
 			}
 		}
 
