@@ -22,8 +22,11 @@ namespace SignService.CommonUtils
 		private static int provTypeCryptoPro2001 = 75;
 
 		// Типы провайдеров для ГОСТ 2012
-		private static int provTypeVipNet2012 = 77;
-		private static int provTypeCryptoPro2012 = 80;
+		private static int provTypeVipNet2012_256 = 77;
+		private static int provTypeVipNet2012_512 = 78;
+
+		private static int provTypeCryptoPro2012_256 = 80;
+		private static int provTypeCryptoPro2012_512 = 81;
 
 		/// <summary>
 		/// Соответствие для алгоритмов хэширования плагина КриптоПро
@@ -61,8 +64,9 @@ namespace SignService.CommonUtils
 		/// </summary>
 		private static readonly Dictionary<int, string> signatureMethods = new Dictionary<int, string>
 		{
-			{ 32798, "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411"}, //ГОСТ 2001
-			{ 32801, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34102012-gostr34112012-256"} //ГОСТ 2012
+			{ Gost3411Consts.HashAlgId, "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411"}, //ГОСТ 2001
+			{ Gost3411_12_256Consts.HashAlgId, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34102012-gostr34112012-256"}, //ГОСТ 2012_256
+			{ Gost3411_12_512Consts.HashAlgId, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34102012-gostr34112012-512"} //ГОСТ 2012_512
 		};
 
 		/// <summary>
@@ -70,8 +74,9 @@ namespace SignService.CommonUtils
 		/// </summary>
 		private static readonly Dictionary<int, string> digestMethods = new Dictionary<int, string>
 		{
-			{ 32798, "http://www.w3.org/2001/04/xmldsig-more#gostr3411"}, //ГОСТ 2001
-			{ 32801, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256"} //ГОСТ 2012
+			{ Gost3411Consts.HashAlgId, "http://www.w3.org/2001/04/xmldsig-more#gostr3411"}, //ГОСТ 2001
+			{ Gost3411_12_256Consts.HashAlgId, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256"}, //ГОСТ 2012_256
+			{ Gost3411_12_512Consts.HashAlgId, "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-512"} //ГОСТ 2012_512
 		};
 
 		/// <summary>
@@ -91,14 +96,32 @@ namespace SignService.CommonUtils
 		/// </summary>
 		/// <param name="isNewGost"></param>
 		/// <returns></returns>
-		internal static CspParameters GetCspParameters(bool isNewGost)
+		internal static CspParameters GetCspParameters(GostEnum gost)
 		{
 			CspParameters cspParameter;
 
 			if (SignServiceProvider.Csp == CspType.VipNet)
-				cspParameter = (isNewGost) ? new CspParameters(provTypeVipNet2012) : new CspParameters(provTypeVipNet2001); // VipNet константы
+			{
+				if (gost == GostEnum.Gost2001)
+					cspParameter = new CspParameters(provTypeVipNet2001);
+				else if (gost == GostEnum.Gost2012_256)
+					cspParameter = new CspParameters(provTypeVipNet2012_256);
+				else if (gost == GostEnum.Gost2012_512)
+					cspParameter = new CspParameters(provTypeVipNet2012_512);
+				else
+					throw new Exception("Ошибка при попытке определить параметры криптопровайдера.");
+			}
 			else if (SignServiceProvider.Csp == CspType.CryptoPro)
-				cspParameter = (isNewGost) ? new CspParameters(provTypeCryptoPro2012) : new CspParameters(provTypeCryptoPro2001); // КриптоПро константы
+			{
+				if (gost == GostEnum.Gost2001)
+					cspParameter = new CspParameters(provTypeCryptoPro2001);
+				else if (gost == GostEnum.Gost2012_256)
+					cspParameter = new CspParameters(provTypeCryptoPro2012_256);
+				else if(gost == GostEnum.Gost2012_512)
+					cspParameter = new CspParameters(provTypeCryptoPro2012_512);
+				else
+					throw new Exception("Ошибка при попытке определить параметры криптопровайдера.");
+			}
 			else
 				throw new Exception($"Ошибка при попытке определить тип используемого криптопровайдера. " +
 					$"Ожидаемые значения: 0 - для использования КриптоПро CSP или 1 - для использования VipNet CSP. Полученное значение: {SignServiceProvider.Csp}.");
@@ -125,17 +148,13 @@ namespace SignService.CommonUtils
 				algId = (int)algInfo.Algid;
 
 				if (algInfo.Algid == GOST341194)
-				{
 					return new HashAlgGost2001Unix();
-				}
 				else if(algInfo.Algid == GOST2012_256)
-				{
 					return new HashAlgGost2012_256Unix();
-				}
+				else if(algInfo.Algid == GOST2012_512)
+					return new HashAlgGost2012_512Unix();
 				else
-				{
 					throw new Exception($"Ошибка при попытке определить функцию хэширования.");
-				}
 			}
 			else
 			{
@@ -143,17 +162,13 @@ namespace SignService.CommonUtils
 				algId = (int)algInfo.Algid;
 
 				if (algInfo.Algid == GOST341194)
-				{
 					return new HashAlgGost2001Win();
-				}
 				else if (algInfo.Algid == GOST2012_256)
-				{
 					return new HashAlgGost2012_256Win();
-				}
+				else if (algInfo.Algid == GOST2012_512)
+					return new HashAlgGost2012_512Win();
 				else
-				{
 					throw new Exception($"Ошибка при попытке определить функцию хэширования.");
-				}
 			}
 		}
 

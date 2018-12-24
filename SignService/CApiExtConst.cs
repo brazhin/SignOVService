@@ -73,17 +73,15 @@ namespace SignService
 		{
 			internal static readonly int HashAlgId = 32801;
 			internal static readonly int HashSizeValue = 256;
-			internal static readonly string HashGost2012_256AlgOid = "";
 		}
 
 		/// <summary>
-		/// Константы для ГОСТ 2012-512 (не поддерживается)
+		/// Константы для ГОСТ 2012-512
 		/// </summary>
 		internal static class Gost3411_12_512Consts
 		{
 			internal static readonly int HashAlgId = 32802;
 			internal static readonly int HashSizeValue = 512;
-			internal static readonly string HashGost2012_256AlgOid = "";
 		}
 
 		/// <summary>
@@ -91,7 +89,7 @@ namespace SignService
 		/// </summary>
 		internal const int GOST341194 = 0x0000801e; // 32798
 		internal const int GOST2012_256 = 0x00008021; // 32801
-		internal const int GOST2012_512 = 0x00008022; // 32802 (не поддерживается)
+		internal const int GOST2012_512 = 0x00008022; // 32802
 
 		/* CRYPT_HASH_ALG_OID_GROUP_ID */
 		internal const string szOID_CP_GOST_R3411 = "1.2.643.2.2.9";

@@ -121,6 +121,12 @@ namespace SignService.Win
 				var hash = new HashAlgGost2012_256Win();
 				hashResult = hash.ComputeHash(data);
 			}
+			else if(algId == CApiExtConst.GOST2012_512)
+			{
+				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-512");
+				var hash = new HashAlgGost2012_512Win();
+				hashResult = hash.ComputeHash(data);
+			}
 			else
 			{
 				log.LogError($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам.");
