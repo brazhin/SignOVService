@@ -118,6 +118,18 @@ namespace SignService
 		}
 
 		/// <summary>
+		/// Метод получения хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
+		public string CreateHash(Stream data, string thumbprint)
+		{
+			var hCert = GetCertificateHandle(thumbprint);
+			return CreateHash(data, hCert);
+		}
+
+		/// <summary>
 		/// Метод получения списка доверительных сертификатов
 		/// </summary>
 		/// <returns></returns>
