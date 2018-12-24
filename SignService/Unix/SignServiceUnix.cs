@@ -263,13 +263,13 @@ namespace SignService.Unix
 			if (algId == CApiExtConst.GOST341194)
 			{
 				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2001");
-				HashAlgorithm hash = new Gost2001Unix();
+				HashAlgorithm hash = new HashAlgGost2001Unix();
 				hashResult = hash.ComputeHash(data);
 			}
 			else if (algId == CApiExtConst.GOST2012_256)
 			{
 				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-256");
-				var hash = new Gost2012_256Unix();
+				var hash = new HashAlgGost2012_256Unix();
 				hashResult = hash.ComputeHash(data);
 			}
 			else

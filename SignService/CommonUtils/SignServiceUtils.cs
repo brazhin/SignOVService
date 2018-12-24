@@ -126,11 +126,11 @@ namespace SignService.CommonUtils
 
 				if (algInfo.Algid == GOST341194)
 				{
-					return new Gost2001Unix();
+					return new HashAlgGost2001Unix();
 				}
 				else if(algInfo.Algid == GOST2012_256)
 				{
-					return new Gost2012_256Unix();
+					return new HashAlgGost2012_256Unix();
 				}
 				else
 				{
@@ -144,11 +144,11 @@ namespace SignService.CommonUtils
 
 				if (algInfo.Algid == GOST341194)
 				{
-					return new Gost2001();
+					return new HashAlgGost2001Win();
 				}
 				else if (algInfo.Algid == GOST2012_256)
 				{
-					return new Gost2012_256();
+					return new HashAlgGost2012_256Win();
 				}
 				else
 				{
