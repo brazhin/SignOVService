@@ -13,9 +13,9 @@ namespace SignServiceTests
 		private const string Gost2012_256CryptoPro = "af976d0aca919d3df62649501e92145b5ed59967";
 		private const string Gost2012_512CryptoPro = "cbb3d9dca57072feb27ededfea37ce4d3bbffe3f";
 
-		private const string Gost2001VipNet = "";
+		private const string Gost2001VipNet = "e6291ff6a8355bec8432c4eb0ff61a52e087b25f";
 		private const string Gost2012_256VipNet = "58282f9009e385aa4ff45a611bf7f5666f9352ef";
-		private const string Gost2012_512VipNet = "";
+		private const string Gost2012_512VipNet = "7c2c55c2baaee62022adc62652d0796258c418bc";
 
 		private const string Mr300 = "Smev3";
 		private const string Mr244 = "Smev2\\Mr244";
