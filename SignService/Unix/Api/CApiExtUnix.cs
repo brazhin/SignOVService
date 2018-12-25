@@ -73,6 +73,11 @@ namespace SignService.Unix.Api
 				throw new Exception($"CryptReleaseContext. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
 		}
 
+		internal static void CryptSetProvParam2(IntPtr handle, int v1, object p, int v2)
+		{
+			throw new NotImplementedException();
+		}
+
 		/// <summary>
 		/// Функция CryptSetHashParam переделывает операции объекта функции хеширования, включая установку начального содержимого хеша и выбор особенных алгоритмов хеширования.
 		/// </summary>
