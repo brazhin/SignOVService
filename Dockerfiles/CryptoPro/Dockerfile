@@ -18,20 +18,18 @@ RUN cat /etc/*-release
 RUN apt-get update
 #RUN apt-get install -y lsb lsb-core alien
 
-ARG HDIMAGE_STORE_NAME=gost2012.000
-ARG CERT_FILE_NAME=gost2012.cer
 
 ADD SignOVService/dist/ /tmp/dist/
-ADD SignOVService/cert/ /tmp/cert/
+ADD SignOVService/certs/ /tmp/cert/
 
 RUN tar -zxf /tmp/dist/linux-amd64_deb.tgz -C /tmp/dist/
 RUN /tmp/dist/linux-amd64_deb/install.sh
 
 RUN /opt/cprocsp/sbin/amd64/cpconfig -license -view
 
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/gost2012.000 /var/opt/cprocsp/keys/root/
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/abc.000 /var/opt/cprocsp/keys/root/
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/AVO.000 /var/opt/cprocsp/keys/root/
+RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2001_CryptoPro/abc.000 /var/opt/cprocsp/keys/root/
+RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost2012.000 /var/opt/cprocsp/keys/root/
+RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gostrgos.000 /var/opt/cprocsp/keys/root/
 
 RUN chown root:root /var/opt/cprocsp/keys/root/ -R
 RUN chmod -R 777 /var/opt/cprocsp/keys/root/
@@ -40,11 +38,9 @@ USER root
 
 #RUN ls -la /var/opt/cprocsp/keys/root/
 
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/$CERT_FILE_NAME -cont "\\\\.\\HDIMAGE\\gost2012"
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/omsk.cer -cont "\\\\.\\HDIMAGE\\abc"
-
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/avo.cer -cont "\\\\.\\HDIMAGE\\AVO"
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uTrustedPublisher -file /tmp/cert/avo.cer -cont "\\\\.\\HDIMAGE\\AVO"
+RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost2012 -cont "\\\\.\\HDIMAGE\\gost2012"
+RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/omsk.cer -cont "\\\\.\\HDIMAGE\\abc"
+RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gostgos.cer -cont "\\\\.\\HDIMAGE\\gostrgos"
 
 RUN /opt/cprocsp/bin/amd64/csptest -passwd -change '' -cont "\\\\.\\HDIMAGE\\abc" -passwd 123
 
