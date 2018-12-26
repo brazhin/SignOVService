@@ -32,9 +32,9 @@ ADD SignOVService/certs/VipNet/Gost2001_VipNet/container2001 /var/opt/itcs/vipne
 ADD SignOVService/certs/VipNet/Gost2012_256_VipNet/container2012_256 /var/opt/itcs/vipnet-csp/containers/
 ADD SignOVService/certs/VipNet/Gost2012_512_VipNet/container2012_512 /var/opt/itcs/vipnet-csp/containers/
 
-ADD SignOVService/certs/Gost2001_VipNet/TestFIO2001.cer /app/TestFIO2001.cer
-ADD SignOVService/certs/Gost2012_256_VipNet/Testovaia_organizatciia_VipNet.cer /app/Testovaia_organizatciia_VipNet.cer
-ADD SignOVService/certs/Gost2012_512_VipNet/Test2012_512.cer /app/Test2012_512.cer
+ADD SignOVService/certs/VipNet/Gost2001_VipNet/TestFIO2001.cer /app/TestFIO2001.cer
+ADD SignOVService/certs/VipNet/Gost2012_256_VipNet/Testovaia_organizatciia_VipNet.cer /app/Testovaia_organizatciia_VipNet.cer
+ADD SignOVService/certs/VipNet/Gost2012_512_VipNet/Test2012_512.cer /app/Test2012_512.cer
 
 RUN /opt/itcs/bin/certmgr add_certificate --location=CurrentUser --store=My --file=/app/TestFIO2001.cer --container=/var/opt/itcs/vipnet-csp/containers/rnd-3-2124-FBE3-A226-19B7-8538-9967-9432
 RUN /opt/itcs/bin/certmgr add_certificate --location=CurrentUser --store=My --file=/app/Testovaia_organizatciia_VipNet.cer --container=/var/opt/itcs/vipnet-csp/containers/rnd-B-B226-18DD-4FCC-97B7-7FEB-6BA3-9529
