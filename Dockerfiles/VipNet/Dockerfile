@@ -28,13 +28,18 @@ RUN dpkg -i itcs-csp-dev_*_all.deb
 #SOFT TOKEN
 RUN dpkg -i itcs-softtoken_*_amd64.deb
 
-#�������� ��������� ��������� ����� � ��������� ���������
-ADD SignOVService/certs/TestCertificate/PrivateKey/ /var/opt/itcs/vipnet-csp/containers/
-#�������� ����������
-ADD SignOVService/certs/TestCertificate/Testovaia_organizatciia_VipNet.cer /app/Testovaia_organizatciia_VipNet.cer
-#������������� ���������� � ��������� ���������
+ADD SignOVService/certs/VipNet/Gost2001_VipNet/container2001 /var/opt/itcs/vipnet-csp/containers/
+ADD SignOVService/certs/VipNet/Gost2012_256_VipNet/container2012_256 /var/opt/itcs/vipnet-csp/containers/
+ADD SignOVService/certs/VipNet/Gost2012_512_VipNet/container2012_512 /var/opt/itcs/vipnet-csp/containers/
+
+ADD SignOVService/certs/Gost2001_VipNet/TestFIO2001.cer /app/TestFIO2001.cer
+ADD SignOVService/certs/Gost2012_256_VipNet/Testovaia_organizatciia_VipNet.cer /app/Testovaia_organizatciia_VipNet.cer
+ADD SignOVService/certs/Gost2012_512_VipNet/Test2012_512.cer /app/Test2012_512.cer
+
+RUN /opt/itcs/bin/certmgr add_certificate --location=CurrentUser --store=My --file=/app/TestFIO2001.cer --container=/var/opt/itcs/vipnet-csp/containers/rnd-3-2124-FBE3-A226-19B7-8538-9967-9432
 RUN /opt/itcs/bin/certmgr add_certificate --location=CurrentUser --store=My --file=/app/Testovaia_organizatciia_VipNet.cer --container=/var/opt/itcs/vipnet-csp/containers/rnd-B-B226-18DD-4FCC-97B7-7FEB-6BA3-9529
-#������� ������ ������������� ������������
+RUN /opt/itcs/bin/certmgr add_certificate --location=CurrentUser --store=My --file=/app/Test2012_512.cer --container=/var/opt/itcs/vipnet-csp/containers/rnd-D-0212-32BF-5E5C-3ADA-6C9B-8756-3ADB
+
 RUN /opt/itcs/bin/certmgr  print_certificates  --location=CurrentUser --store=My
 
 FROM microsoft/aspnetcore-build:2.0 AS build
