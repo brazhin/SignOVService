@@ -5,12 +5,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SignOVService.Model.Project;
+using SignService;
 
 namespace SignOVService
 {
 	public class Startup
 	{
 		private ServiceProvider sp;
+		private ISignServiceSettings settings;
 
 		public Startup(IConfiguration configuration)
 		{
@@ -22,14 +24,11 @@ namespace SignOVService
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices(IServiceCollection services)
 		{
-			this.sp = services.BuildServiceProvider();
-			ILoggerFactory loggerFactory = this.sp.GetService<ILoggerFactory>();
-
 			services.AddMvc();
-
-			services.AddSingleton<SignServiceSettings>(fabric => GetSignServiceSettings());
-
-			services.BuildServiceProvider();
+			services.AddScoped<SignServiceProvider>((service) => {
+				var signServiceSettings = SignServiceSettingsCreate();
+				return new SignServiceProvider(signServiceSettings.Csp, service.GetService<ILoggerFactory>());
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -63,11 +62,12 @@ namespace SignOVService
 			});
 		}
 
-		private SignServiceSettings GetSignServiceSettings()
+		private ISignServiceSettings SignServiceSettingsCreate()
 		{
-			var settings = new SignServiceSettings();
-			Configuration.GetSection("SignServiceSettings").Bind(settings);
+			if (settings != null) return settings;
 
+			settings = new SignServiceSettings();
+			Configuration.GetSection("SignServiceSettings").Bind(settings);
 			return settings;
 		}
 	}

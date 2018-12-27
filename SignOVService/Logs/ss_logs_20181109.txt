@@ -1,4 +1,0 @@
-2018-11-09 20:50:39.203 +06:00 [Error] SignOVService.Controllers.SignController: В результате работы метода подписания возникла следующая ошибка: Value cannot be null.
-Parameter name: factory.
-2018-11-09 21:11:53.339 +06:00 [Error] SignOVService.Controllers.SignController: В результате работы метода подписания возникла следующая ошибка: Value cannot be null.
-Parameter name: factory.
