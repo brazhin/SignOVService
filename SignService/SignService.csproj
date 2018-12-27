@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <PackageId>SignService</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Vasilev_Alexey</Authors>
+    <Company>NetVoxLab</Company>
+    <Description>Библиотека для работы с криптографической подписью на основе алгоритмов ГОСТ</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
