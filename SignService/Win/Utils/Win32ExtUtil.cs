@@ -1,4 +1,5 @@
-﻿using SignService.Win.Api;
+﻿using SignService.CommonUtils;
+using SignService.Win.Api;
 using SignService.Win.Handles;
 using System;
 using System.Runtime.InteropServices;
@@ -17,7 +18,6 @@ namespace SignService.Win.Utils
 		private static SafeProvHandleCP safeGost2001ProvHandle;
 		private static SafeProvHandleCP safeGost2012_256ProvHandle;
 		private static SafeProvHandleCP safeGost2012_512ProvHandle;
-		private static SafeProvHandleCP safeMsProvHandle;
 
 		private static object InternalSyncObject
 		{
@@ -31,31 +31,6 @@ namespace SignService.Win.Utils
 				}
 
 				return internalSyncObject;
-			}
-		}
-
-		/// <summary>
-		/// Свойство получения провайдера MS
-		/// </summary>
-		internal static SafeProvHandleCP StaticMsProvHandle
-		{
-			[SecurityCritical]
-			get
-			{
-				if (safeMsProvHandle == null)
-				{
-					lock (InternalSyncObject)
-					{
-						if (safeMsProvHandle == null)
-						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(1));
-							Thread.MemoryBarrier();
-							safeMsProvHandle = safeProvHandleCP;
-						}
-					}
-				}
-
-				return safeMsProvHandle;
 			}
 		}
 
@@ -189,7 +164,8 @@ namespace SignService.Win.Utils
 					{
 						if (safeGost2001ProvHandle == null)
 						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(75));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2001);
+							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							safeGost2001ProvHandle = safeProvHandleCP;
 						}
@@ -214,7 +190,8 @@ namespace SignService.Win.Utils
 					{
 						if (safeGost2012_256ProvHandle == null)
 						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(80));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_256);
+							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							safeGost2012_256ProvHandle = safeProvHandleCP;
 						}
@@ -239,7 +216,8 @@ namespace SignService.Win.Utils
 					{
 						if (safeGost2012_512ProvHandle == null)
 						{
-							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(new CspParameters(81));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_512);
+							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							safeGost2012_512ProvHandle = safeProvHandleCP;
 						}

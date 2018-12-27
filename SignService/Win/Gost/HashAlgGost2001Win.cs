@@ -10,10 +10,10 @@ using static SignService.CApiExtConst;
 namespace SignService.Win.Gost
 {
 	/// <summary>
-	/// Класс для получения хэш функции по ГОСТ Р 34.11-2012, используя .NET.
+	/// Класс для получения хэш функции по ГОСТ Р 34.11-94, используя .NET
 	/// </summary>
 	[ComVisible(true)]
-	public sealed class Gost2012_256 : HashAlgorithm
+	public sealed class HashAlgGost2001Win : HashAlgorithm
 	{
 		[SecurityCritical]
 		private SafeHashHandleCP safeHashHandle;
@@ -40,18 +40,14 @@ namespace SignService.Win.Gost
 		}
 
 		[SecuritySafeCritical]
-		public Gost2012_256()
+		public HashAlgGost2001Win()
 		{
-			this.HashSizeValue = Gost3411_12_256Consts.HashSizeValue;
+			this.HashSizeValue = Gost3411Consts.HashSizeValue;
 			SafeHashHandleCP invalidHandle = SafeHashHandleCP.InvalidHandle;
-			Win32ExtUtil.CreateHash(Win32ExtUtil.StaticGost2012_256ProvHandle, Gost3411_12_256Consts.HashAlgId, ref invalidHandle);
+			Win32ExtUtil.CreateHash(Win32ExtUtil.StaticGost2001ProvHandle, Gost3411Consts.HashAlgId, ref invalidHandle);
 			this.safeHashHandle = invalidHandle;
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="disposing"></param>
 		[SecuritySafeCritical]
 		protected override void Dispose(bool disposing)
 		{
@@ -64,12 +60,6 @@ namespace SignService.Win.Gost
 			base.Dispose(disposing);
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="rgb"></param>
-		/// <param name="ibStart"></param>
-		/// <param name="cbSize"></param>
 		[SecuritySafeCritical]
 		protected override void HashCore(byte[] rgb, int ibStart, int cbSize)
 		{
@@ -79,19 +69,12 @@ namespace SignService.Win.Gost
 			}
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns></returns>
 		[SecuritySafeCritical]
 		protected override byte[] HashFinal()
 		{
 			return Win32ExtUtil.EndHash(this.safeHashHandle);
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
 		[SecuritySafeCritical]
 		public override void Initialize()
 		{
@@ -102,7 +85,7 @@ namespace SignService.Win.Gost
 			}
 
 			SafeHashHandleCP invalidHandle = SafeHashHandleCP.InvalidHandle;
-			Win32ExtUtil.CreateHash(Win32ExtUtil.StaticGost2012_256ProvHandle, Gost3411_12_256Consts.HashAlgId, ref invalidHandle);
+			Win32ExtUtil.CreateHash(Win32ExtUtil.StaticGost2001ProvHandle, Gost3411Consts.HashAlgId, ref invalidHandle);
 			this.safeHashHandle = invalidHandle;
 		}
 	}

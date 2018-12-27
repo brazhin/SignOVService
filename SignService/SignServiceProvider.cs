@@ -18,11 +18,19 @@ namespace SignService
 		private readonly ILoggerFactory loggerFactory;
 		private readonly ILogger<SignServiceProvider> log;
 
-		public SignServiceProvider(ILoggerFactory loggerFactory)
+		public SignServiceProvider(CspType csp, ILoggerFactory loggerFactory)
 		{
+			// Задаем тип используемого Криптопровайдера
+			Csp = csp;
+
 			this.loggerFactory = loggerFactory;
 			this.log = loggerFactory.CreateLogger<SignServiceProvider>();
 		}
+
+		/// <summary>
+		/// Тип используемого криптопровайдера
+		/// </summary>
+		internal static CspType Csp { get; private set; }
 
 		/// <summary>
 		/// Метод подписи XML
@@ -107,6 +115,18 @@ namespace SignService
 		{
 			int hashAlg = 0;
 			return CreateHash(data, certificate, ref hashAlg);
+		}
+
+		/// <summary>
+		/// Метод получения хэш
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="thumbprint"></param>
+		/// <returns></returns>
+		public string CreateHash(Stream data, string thumbprint)
+		{
+			var hCert = GetCertificateHandle(thumbprint);
+			return CreateHash(data, hCert);
 		}
 
 		/// <summary>

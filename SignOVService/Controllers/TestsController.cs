@@ -170,7 +170,7 @@ namespace SignOVService.Controllers
 			try
 			{
 				if (HttpContext.Request.Form.Files.Count <= 0)
-					return BadRequest("Файлов для подписания не обнаружено.");
+					return BadRequest("Файлов для рассчета хэш не обнаружено.");
 
 				var form = HttpContext.Request.Form;
 				var file = HttpContext.Request.Form.Files[0];
@@ -186,11 +186,8 @@ namespace SignOVService.Controllers
 					return BadRequest("Не удалось получить значение thumbprint для поиска сертификата.");
 				}
 
-				// Получаем сертификат на основе которого рассчитываем хэш
-				var certHandle = provider.GetCertificateHandle(thumbprint);
-
 				// Подписываем данные, необходимо убедиться что значение Stream.Position = 0
-				var hash = provider.CreateHash(stream, certHandle);
+				var hash = provider.CreateHash(stream, thumbprint);
 
 				return Ok(hash);
 			}

@@ -9,8 +9,11 @@ using static SignService.CApiExtConst;
 
 namespace SignService.Unix.Gost
 {
+	/// <summary>
+	/// Класс для получения хэш функции по ГОСТ 34.11-2012(256), используя .NET
+	/// </summary>
 	[ComVisible(true)]
-	public sealed class Gost2012_512Unix : HashAlgorithm
+	public sealed class HashAlgGost2012_256Unix : HashAlgorithm
 	{
 		[SecurityCritical]
 		private IntPtr unsafeHashHandle;
@@ -34,11 +37,11 @@ namespace SignService.Unix.Gost
 		}
 
 		[SecuritySafeCritical]
-		public Gost2012_512Unix()
+		public HashAlgGost2012_256Unix()
 		{
-			this.HashSizeValue = Gost3411_12_512Consts.HashSizeValue;
+			this.HashSizeValue = Gost3411_12_256Consts.HashSizeValue;
 			IntPtr invalidHandle = IntPtr.Zero;
-			UnixExtUtil.CreateHash(UnixExtUtil.StaticGost2012_512ProvHandle, Gost3411_12_512Consts.HashAlgId, ref invalidHandle);
+			UnixExtUtil.CreateHash(UnixExtUtil.StaticGost2012_256ProvHandle, Gost3411_12_256Consts.HashAlgId, ref invalidHandle);
 			this.unsafeHashHandle = invalidHandle;
 		}
 
@@ -51,7 +54,7 @@ namespace SignService.Unix.Gost
 			}
 
 			IntPtr invalidHandle = IntPtr.Zero;
-			UnixExtUtil.CreateHash(UnixExtUtil.StaticGost2012_512ProvHandle, Gost3411_12_512Consts.HashAlgId, ref invalidHandle);
+			UnixExtUtil.CreateHash(UnixExtUtil.StaticGost2012_256ProvHandle, Gost3411_12_256Consts.HashAlgId, ref invalidHandle);
 			this.unsafeHashHandle = invalidHandle;
 		}
 

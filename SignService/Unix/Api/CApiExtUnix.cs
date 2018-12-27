@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using static SignService.CApiExtConst;
@@ -9,12 +6,10 @@ using static SignService.CApiExtConst;
 namespace SignService.Unix.Api
 {
 	/// <summary>
-	/// Класс для подключения функций API КриптоПро (capilite)
+	/// Класс для подключения функций API
 	/// </summary>
 	internal class CApiExtUnix
 	{
-		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
-
 		/// <summary>
 		/// Функция получает первый или следующий сертификат в хранилище сертификатов.
 		/// Эта функция используется в цикле для того, чтобы последовательно получить все сертификаты в хранилище сертификатов.
@@ -22,13 +17,15 @@ namespace SignService.Unix.Api
 		/// <param name="hCertStore"></param>
 		/// <param name="pPrevCertContext"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern IntPtr CertEnumCertificatesInStore(
-			[In] IntPtr hCertStore,
-			[In] IntPtr pPrevCertContext
-		);
+		internal static IntPtr CertEnumCertificatesInStore(IntPtr hCertStore, IntPtr pPrevCertContext)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CertEnumCertificatesInStore(hCertStore, pPrevCertContext);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CertEnumCertificatesInStore(hCertStore, pPrevCertContext);
+			else
+				throw new Exception($"CertEnumCertificatesInStore. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptAcquireCertificatePrivateKey получает дескриптор HCRYPTPROV CSP , включая доступ к связанному с ним ключевому контейнеруи параметр dwKeySpec
@@ -44,11 +41,16 @@ namespace SignService.Unix.Api
 		/// <param name="pdwKeySpec"></param>
 		/// <param name="pfCallerFreeProv"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptAcquireCertificatePrivateKey([In] IntPtr pCert, [In] uint dwFlags, [In] IntPtr pvReserved,
-			[In, Out] ref IntPtr phCryptProv, [In, Out] ref uint pdwKeySpec, [In, Out] ref bool pfCallerFreeProv);
+		internal static bool CryptAcquireCertificatePrivateKey(IntPtr pCert, uint dwFlags, IntPtr pvReserved, ref IntPtr phCryptProv, 
+			ref uint pdwKeySpec, ref bool pfCallerFreeProv)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptAcquireCertificatePrivateKey(pCert, dwFlags, pvReserved, ref phCryptProv, ref pdwKeySpec, ref pfCallerFreeProv);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptAcquireCertificatePrivateKey(pCert, dwFlags, pvReserved, ref phCryptProv, ref pdwKeySpec, ref pfCallerFreeProv);
+			else
+				throw new Exception($"CryptAcquireCertificatePrivateKey. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptReleaseContext освобождает дескриптор CSP и ключевой контейнер.
@@ -61,11 +63,15 @@ namespace SignService.Unix.Api
 		/// <param name="hCryptProv"></param>
 		/// <param name="dwFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, ExactSpelling = false, SetLastError = true)]
-		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptReleaseContext(IntPtr hCryptProv, uint dwFlags);
+		internal static bool CryptReleaseContext(IntPtr hCryptProv, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptReleaseContext(hCryptProv, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptReleaseContext(hCryptProv, dwFlags);
+			else
+				throw new Exception($"CryptReleaseContext. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptSetHashParam переделывает операции объекта функции хеширования, включая установку начального содержимого хеша и выбор особенных алгоритмов хеширования.
@@ -75,10 +81,15 @@ namespace SignService.Unix.Api
 		/// <param name="pbData"></param>
 		/// <param name="dwFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, ExactSpelling = false, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptSetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, [In] uint dwFlags);
+		internal static bool CryptSetHashParam(IntPtr hHash, uint dwParam, byte[] pbData, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptSetHashParam(hHash, dwParam, pbData, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptSetHashParam(hHash, dwParam, pbData, dwFlags);
+			else
+				throw new Exception($"CryptSetHashParam. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция подписи хэша
@@ -90,11 +101,16 @@ namespace SignService.Unix.Api
 		/// <param name="pbSignature"></param>
 		/// <param name="pdwSigLen"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, BestFitMapping = false, ExactSpelling = false, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptSignHash([In] IntPtr hHash, [In] uint dwKeySpec, StringBuilder sDescription,
-			[In] uint dwFlags, [In][Out] byte[] pbSignature, ref uint pdwSigLen);
+		internal static bool CryptSignHash(IntPtr hHash, uint dwKeySpec, StringBuilder sDescription,
+			uint dwFlags, byte[] pbSignature, ref uint pdwSigLen)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptSignHash(hHash, dwKeySpec, sDescription, dwFlags, pbSignature, ref pdwSigLen);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptSignHash(hHash, dwKeySpec, sDescription, dwFlags, pbSignature, ref pdwSigLen);
+			else
+				throw new Exception($"CryptSignHash. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptCreateHash начинает хеширование потока данных. 
@@ -106,10 +122,15 @@ namespace SignService.Unix.Api
 		/// <param name="dwFlags"></param>
 		/// <param name="phHash"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptCreateHash([In] IntPtr hProv, [In] uint Algid, [In] IntPtr hKey, [In] uint dwFlags, [In][Out] ref IntPtr phHash);
+		internal static bool CryptCreateHash(IntPtr hProv, uint Algid, IntPtr hKey, uint dwFlags, ref IntPtr phHash)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptCreateHash(hProv, Algid, hKey, dwFlags, ref phHash);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptCreateHash(hProv, Algid, hKey, dwFlags, ref phHash);
+			else
+				throw new Exception($"CryptCreateHash. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptAcquireContext используется для получения дескриптора к конкретному контейнеру ключей в конкретном поставщике криптографических услуг (CSP).
@@ -120,10 +141,15 @@ namespace SignService.Unix.Api
 		/// <param name="dwProvType"></param>
 		/// <param name="dwFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, BestFitMapping = false, CharSet = CharSet.Auto, ExactSpelling = false, SetLastError = true, ThrowOnUnmappableChar = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptAcquireContext([In][Out] ref IntPtr hProv, [In] string pszContainer, [In] string pszProvider, [In] uint dwProvType, [In] uint dwFlags);
+		internal static bool CryptAcquireContext(ref IntPtr hProv, string pszContainer, string pszProvider, uint dwProvType, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptAcquireContext(ref hProv, pszContainer, pszProvider, dwProvType, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptAcquireContext(ref hProv, pszContainer, pszProvider, dwProvType, dwFlags);
+			else
+				throw new Exception($"CryptAcquireContext. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptGetHashParam получает данные, управляющие операциями объекта функции хеширования. 
@@ -135,10 +161,15 @@ namespace SignService.Unix.Api
 		/// <param name="pdwDataLen"></param>
 		/// <param name="dwFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptGetHashParam([In] IntPtr hHash, [In] uint dwParam, [In][Out] byte[] pbData, ref uint pdwDataLen, [In] uint dwFlags);
+		internal static bool CryptGetHashParam(IntPtr hHash, uint dwParam, byte[] pbData, ref uint pdwDataLen, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptGetHashParam(hHash, dwParam, pbData, ref pdwDataLen, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptGetHashParam(hHash, dwParam, pbData, ref pdwDataLen, dwFlags);
+			else
+				throw new Exception($"CryptGetHashParam. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptHashData добавляет данные в определенный объект функции хеширования. 
@@ -150,10 +181,15 @@ namespace SignService.Unix.Api
 		/// <param name="dwDataLen"></param>
 		/// <param name="dwFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptHashData([In] IntPtr hHash, byte[] pbData, [In] uint dwDataLen, [In] uint dwFlags);
+		internal static bool CryptHashData(IntPtr hHash, byte[] pbData, uint dwDataLen, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptHashData(hHash, pbData, dwDataLen, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptHashData(hHash, pbData, dwDataLen, dwFlags);
+			else
+				throw new Exception($"CryptHashData. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptDestroyHash уничтожает объект функции хеширования, ссылающийся на параметр hHash. 
@@ -161,11 +197,15 @@ namespace SignService.Unix.Api
 		/// </summary>
 		/// <param name="pHashCtx"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false, SetLastError = true)]
-		[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern bool CryptDestroyHash(IntPtr pHashCtx);
+		internal static bool CryptDestroyHash(IntPtr pHashCtx)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptDestroyHash(pHashCtx);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptDestroyHash(pHashCtx);
+			else
+				throw new Exception($"CryptDestroyHash. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция проверки открепленной подписи
@@ -179,8 +219,7 @@ namespace SignService.Unix.Api
 		/// <param name="rgcbToBeSigned"></param>
 		/// <param name="ppSignerCert"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		static internal extern bool CryptVerifyDetachedMessageSignature(
+		static internal bool CryptVerifyDetachedMessageSignature(
 			ref CRYPT_VERIFY_MESSAGE_PARA pVerifyPara,
 			int dwSignerIndex,
 			byte[] pbDetachedSignBlob,
@@ -189,7 +228,15 @@ namespace SignService.Unix.Api
 			IntPtr[] rgpbToBeSigned,
 			int[] rgcbToBeSigned,
 			IntPtr ppSignerCert
-		);
+		)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptVerifyDetachedMessageSignature(ref pVerifyPara, dwSignerIndex, pbDetachedSignBlob, cbDetachedSignBlob, cToBeSigned, rgpbToBeSigned, rgcbToBeSigned, ppSignerCert);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptVerifyDetachedMessageSignature(ref pVerifyPara, dwSignerIndex, pbDetachedSignBlob, cbDetachedSignBlob, cToBeSigned, rgpbToBeSigned, rgcbToBeSigned, ppSignerCert);
+			else
+				throw new Exception($"CryptVerifyDetachedMessageSignature. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptFindOIDInfo получает первую предопределенную или зарегистрированную структуру CRYPT_OID_INFO, 
@@ -200,10 +247,15 @@ namespace SignService.Unix.Api
 		/// <param name="pvKey"></param>
 		/// <param name="dwGroupId"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, IntPtr pvKey, OidGroup dwGroupId);
+		internal static IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, IntPtr pvKey, OidGroup dwGroupId)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptFindOIDInfo(dwKeyType, pvKey, dwGroupId);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptFindOIDInfo(dwKeyType, pvKey, dwGroupId);
+			else
+				throw new Exception($"CryptFindOIDInfo. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция CryptFindOIDInfo получает первую предопределенную или зарегистрированную структуру CRYPT_OID_INFO, 
@@ -214,10 +266,15 @@ namespace SignService.Unix.Api
 		/// <param name="pvKey"></param>
 		/// <param name="dwGroupId"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.None, ExactSpelling = false)]
-		[SecurityCritical]
-		[SuppressUnmanagedCodeSecurity]
-		internal static extern IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, String pvKey, OidGroup dwGroupId);
+		internal static IntPtr CryptFindOIDInfo(OidKeyType dwKeyType, String pvKey, OidGroup dwGroupId)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptFindOIDInfo(dwKeyType, pvKey, dwGroupId);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptFindOIDInfo(dwKeyType, pvKey, dwGroupId);
+			else
+				throw new Exception($"CryptFindOIDInfo. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция открывает хранилище сертификатов
@@ -228,14 +285,15 @@ namespace SignService.Unix.Api
 		/// <param name="dwFlags"></param>
 		/// <param name="pvPara"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		internal static extern IntPtr CertOpenStore(
-			[In] uint lpszStoreProvider,
-			[In] uint dwMsgAndCertEncodingType,
-			[In] IntPtr hCryptProv,
-			[In] uint dwFlags,
-			[In, MarshalAs(UnmanagedType.LPStr)] string pvPara
-		);
+		internal static IntPtr CertOpenStore(uint lpszStoreProvider, uint dwMsgAndCertEncodingType, IntPtr hCryptProv, uint dwFlags, string pvPara)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CertOpenStore(lpszStoreProvider, dwMsgAndCertEncodingType, hCryptProv, dwFlags, pvPara);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CertOpenStore(lpszStoreProvider, dwMsgAndCertEncodingType, hCryptProv, dwFlags, pvPara);
+			else
+				throw new Exception($"CertOpenStore. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция закрывает хранилище сертификатов
@@ -243,8 +301,15 @@ namespace SignService.Unix.Api
 		/// <param name="_hCertStore"></param>
 		/// <param name="_iFlags"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		internal static extern bool CertCloseStore(IntPtr _hCertStore, uint _iFlags);
+		internal static bool CertCloseStore(IntPtr _hCertStore, uint _iFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CertCloseStore(_hCertStore, _iFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CertCloseStore(_hCertStore, _iFlags);
+			else
+				throw new Exception($"CertCloseStore. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция поиска сертификата в хранилище
@@ -256,15 +321,18 @@ namespace SignService.Unix.Api
 		/// <param name="pvFindPara"></param>
 		/// <param name="pPrevCertContext"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		internal static extern IntPtr CertFindCertificateInStore(
-			[In] IntPtr hCertStore,
-			[In] uint dwCertEncodingType,
-			[In] uint dwFindFlags,
-			[In] uint dwFindType,
-			[In] ref CApiExtConst.CRYPT_HASH_BLOB pvFindPara,
-			[In] IntPtr pPrevCertContext
-		);
+		internal static IntPtr CertFindCertificateInStore(IntPtr hCertStore, uint dwCertEncodingType, uint dwFindFlags, uint dwFindType,
+			ref CApiExtConst.CRYPT_HASH_BLOB pvFindPara,
+			IntPtr pPrevCertContext
+		)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CertFindCertificateInStore(hCertStore, dwCertEncodingType, dwFindFlags, dwFindType, ref pvFindPara, pPrevCertContext);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CertFindCertificateInStore(hCertStore, dwCertEncodingType, dwFindFlags, dwFindType, ref pvFindPara, pPrevCertContext);
+			else
+				throw new Exception($"CertFindCertificateInStore. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция создает хеш определенного содержания, подписывает хеш и затем 
@@ -278,31 +346,49 @@ namespace SignService.Unix.Api
 		/// <param name="pbSignedBlob"></param>
 		/// <param name="pcbSignedBlob"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, SetLastError = true)]
-		internal static extern bool CryptSignMessage(
-			[In] ref CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pSignPara,
-			[In] bool fDetachedSignature,
-			[In] uint cToBeSigned,
-			[In] IntPtr[] rgpbToBeSigned,
-			[In] uint[] rgcbToBeSigned,
+		internal static bool CryptSignMessage(ref CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pSignPara, bool fDetachedSignature, uint cToBeSigned,
+			IntPtr[] rgpbToBeSigned,
+			uint[] rgcbToBeSigned,
 			byte[] pbSignedBlob,
-			[In] ref uint pcbSignedBlob
-		);
+			ref uint pcbSignedBlob
+		)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptSignMessage(ref pSignPara, fDetachedSignature, cToBeSigned, rgpbToBeSigned, rgcbToBeSigned, pbSignedBlob, ref pcbSignedBlob);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptSignMessage(ref pSignPara, fDetachedSignature, cToBeSigned, rgpbToBeSigned, rgcbToBeSigned, pbSignedBlob, ref pcbSignedBlob);
+			else
+				throw new Exception($"CryptSignMessage. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция дублирует контекст сертификата
 		/// </summary>
 		/// <param name="pCertContext"></param>
 		/// <returns></returns>
-		[DllImport(libCapi20, CharSet = CharSet.Auto, ExactSpelling = false, SetLastError = true)]
-		internal static extern IntPtr CertDuplicateCertificateContext([In] IntPtr pCertContext);
+		internal static IntPtr CertDuplicateCertificateContext(IntPtr pCertContext)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CertDuplicateCertificateContext(pCertContext);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CertDuplicateCertificateContext(pCertContext);
+			else
+				throw new Exception($"CertDuplicateCertificateContext. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 
 		/// <summary>
 		/// Функция освобождает контекст сертификата, уменьшая счетчик ссылок на единицу. 
 		/// Когда счетчик ссылок обнуляется, функция освобождает память, выделенную под контекст сертификата.
 		/// </summary>
 		/// <param name="hPrev"></param>
-		[DllImport(libCapi20, SetLastError = true)]
-		internal static extern void CertFreeCertificateContext(IntPtr hPrev);
+		internal static void CertFreeCertificateContext(IntPtr hPrev)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				CApiExtUnixCryptoPro.CertFreeCertificateContext(hPrev);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				CApiExtUnixVipNet.CertFreeCertificateContext(hPrev);
+			else
+				throw new Exception($"CertFreeCertificateContext. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
 	}
 }

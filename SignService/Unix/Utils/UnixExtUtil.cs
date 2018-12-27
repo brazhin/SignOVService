@@ -1,8 +1,6 @@
-﻿using SignService.Unix.Api;
-using SignService.Unix.Gost;
-using SignService.Win.Gost;
+﻿using SignService.CommonUtils;
+using SignService.Unix.Api;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -19,7 +17,6 @@ namespace SignService.Unix.Utils
 		private static IntPtr unsafeGost2001ProvHandle;
 		private static IntPtr unsafeGost2012_256ProvHandle;
 		private static IntPtr unsafeGost2012_512ProvHandle;
-		private static IntPtr unsafeMsProvHandle;
 
 		private static object InternalSyncObject
 		{
@@ -88,6 +85,32 @@ namespace SignService.Unix.Utils
 		}
 
 		/// <summary>
+		/// Метод поиска провайдера поддерживающего ГОСТ 3411-2001
+		/// </summary>
+		internal static IntPtr StaticGost2001ProvHandle
+		{
+			[SecurityCritical]
+			get
+			{
+				if (unsafeGost2001ProvHandle == null || unsafeGost2001ProvHandle == IntPtr.Zero)
+				{
+					lock (InternalSyncObject)
+					{
+						if (unsafeGost2001ProvHandle == null || unsafeGost2001ProvHandle == IntPtr.Zero)
+						{
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2001);
+							IntPtr unsafeProvHandleCP = AcquireProvHandle(cspParameter);
+							Thread.MemoryBarrier();
+							unsafeGost2001ProvHandle = unsafeProvHandleCP;
+						}
+					}
+				}
+
+				return unsafeGost2001ProvHandle;
+			}
+		}
+
+		/// <summary>
 		/// Метод поиска провайдера поддерживающего ГОСТ 3410-2012-256
 		/// </summary>
 		internal static IntPtr StaticGost2012_256ProvHandle
@@ -101,7 +124,8 @@ namespace SignService.Unix.Utils
 					{
 						if (unsafeGost2012_256ProvHandle == null || unsafeGost2012_256ProvHandle == IntPtr.Zero)
 						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(80));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_256);
+							IntPtr unsafeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							unsafeGost2012_256ProvHandle = unsafeProvHandleCP;
 						}
@@ -126,7 +150,8 @@ namespace SignService.Unix.Utils
 					{
 						if (unsafeGost2012_512ProvHandle == null || unsafeGost2012_512ProvHandle == IntPtr.Zero)
 						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(81));
+							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_512);
+							IntPtr unsafeProvHandleCP = AcquireProvHandle(cspParameter);
 							Thread.MemoryBarrier();
 							unsafeGost2012_512ProvHandle = unsafeProvHandleCP;
 						}
@@ -134,31 +159,6 @@ namespace SignService.Unix.Utils
 				}
 
 				return unsafeGost2012_512ProvHandle;
-			}
-		}
-
-		/// <summary>
-		/// Метод поиска провайдера поддерживающего ГОСТ 3411-2001
-		/// </summary>
-		internal static IntPtr StaticGost2001ProvHandle
-		{
-			[SecurityCritical]
-			get
-			{
-				if (unsafeGost2001ProvHandle == null || unsafeGost2001ProvHandle == IntPtr.Zero)
-				{
-					lock (InternalSyncObject)
-					{
-						if (unsafeGost2001ProvHandle == null || unsafeGost2001ProvHandle == IntPtr.Zero)
-						{
-							IntPtr unsafeProvHandleCP = AcquireProvHandle(new CspParameters(75));
-							Thread.MemoryBarrier();
-							unsafeGost2001ProvHandle = unsafeProvHandleCP;
-						}
-					}
-				}
-
-				return unsafeGost2001ProvHandle;
 			}
 		}
 

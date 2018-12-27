@@ -1,4 +1,0 @@
-TestContent
-The CertOpenStore function opens a certificate store by using a specified store provider type. 
-While this function can open a certificate store for most purposes, CertOpenSystemStore is recommended to open the most common 
-certificate stores. CertOpenStore is required for more complex options and special cases.

@@ -39,13 +39,15 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 		{
 			if (SignServiceUtils.IsUnix)
 			{
-				CryptoConfig.AddAlgorithm(typeof(Gost2001Unix), new string[1] { "http://www.w3.org/2001/04/xmldsig-more#gostr3411" });
-				CryptoConfig.AddAlgorithm(typeof(Gost2012_256Unix), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2001Unix), new string[1] { "http://www.w3.org/2001/04/xmldsig-more#gostr3411" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2012_256Unix), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2012_512Unix), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-512" });
 			}
 			else
 			{
-				CryptoConfig.AddAlgorithm(typeof(Gost2001), new string[1] { "http://www.w3.org/2001/04/xmldsig-more#gostr3411" });
-				CryptoConfig.AddAlgorithm(typeof(Gost2012_256), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2001Win), new string[1] { "http://www.w3.org/2001/04/xmldsig-more#gostr3411" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2012_256Win), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-256" });
+				CryptoConfig.AddAlgorithm(typeof(HashAlgGost2012_512Win), new string[1] { "urn:ietf:params:xml:ns:cpxmlsec:algorithms:gostr34112012-512" });
 			}
 
 			CryptoConfig.AddAlgorithm(typeof(SmevTransformAlg), new string[1] { SmevTransformAlg.ALGORITHM_URI });
@@ -145,7 +147,15 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 		{
 			Type t = typeof(SignedXml);
 			MethodInfo m = t.GetMethod("BuildDigestedReferences", BindingFlags.NonPublic | BindingFlags.Instance);
-			m.Invoke(this, new object[] { });
+
+			try
+			{
+				m.Invoke(this, new object[] { });
+			}
+			catch(Exception ex)
+			{
+				throw ex.InnerException ?? ex;
+			}
 		}
 	}
 }

@@ -112,27 +112,25 @@ namespace SignService.Win
 			if (algId == CApiExtConst.GOST341194)
 			{
 				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2001");
-				HashAlgorithm hash = new Gost2001();
+				HashAlgorithm hash = new HashAlgGost2001Win();
 				hashResult = hash.ComputeHash(data);
 			}
 			else if(algId == CApiExtConst.GOST2012_256)
 			{
 				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-256");
-				var hash = new Gost2012_256();
+				var hash = new HashAlgGost2012_256Win();
 				hashResult = hash.ComputeHash(data);
 			}
-			else if (algId == CApiExtConst.GOST2012_512)
+			else if(algId == CApiExtConst.GOST2012_512)
 			{
 				log.LogDebug($"Полученный алгоритм хэширования {algId} соответствует ГОСТ-2012-512");
-				var hash = new Gost2012_512();
+				var hash = new HashAlgGost2012_512Win();
 				hashResult = hash.ComputeHash(data);
 			}
 			else
 			{
-				log.LogDebug($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам. Используем криптопровайдер системы.");
-				// Ветка для использования MS провайдера при формировании хэш
-				HashAlgorithm hash = new HashMsApiUtil((int)algId);
-				hashResult = hash.ComputeHash(data);
+				log.LogError($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам.");
+				throw new Exception($"Полученный алгоритм хэширования {algId} не соответствует поддерживаемым ГОСТ алгоритмам.");
 			}
 
 			if (hashResult == null || hashResult.Length <= 0)
