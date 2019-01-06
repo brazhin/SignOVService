@@ -11,6 +11,24 @@ namespace SignService.Unix.Api
 	internal class CApiExtUnix
 	{
 		/// <summary>
+		/// Функция установки параметров криптопровайдера
+		/// </summary>
+		/// <param name="prov"></param>
+		/// <param name="dwParam"></param>
+		/// <param name="pbData"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		internal static bool CryptSetProvParam(IntPtr prov, uint dwParam, byte[] pbData, uint dwFlags)
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.CryptSetProvParam(prov, dwParam, pbData, dwFlags);
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.CryptSetProvParam(prov, dwParam, pbData, dwFlags);
+			else
+				throw new Exception($"CryptSetProvParam. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
+
+		/// <summary>
 		/// Функция получает первый или следующий сертификат в хранилище сертификатов.
 		/// Эта функция используется в цикле для того, чтобы последовательно получить все сертификаты в хранилище сертификатов.
 		/// </summary>

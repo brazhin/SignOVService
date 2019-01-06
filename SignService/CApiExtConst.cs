@@ -8,6 +8,9 @@ namespace SignService
 	/// </summary>
 	internal class CApiExtConst
 	{
+		internal static uint PP_KEYEXCHANGE_PIN = 0x20;
+		internal static uint PP_SIGNATURE_PIN = 0x21;
+
 		/// <summary>
 		/// Параметры необходимые для метода формирования открепленной подписи
 		/// </summary>

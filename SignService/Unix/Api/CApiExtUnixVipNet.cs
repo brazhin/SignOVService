@@ -14,6 +14,22 @@ namespace SignService.Unix.Api
 		private const string libcrypt32 = "/opt/itcs/lib/libcrypt32.so";
 
 		/// <summary>
+		/// Функция производит установку параметров криптопровайдера
+		/// </summary>
+		/// <param name="prov"></param>
+		/// <param name="dwParam"></param>
+		/// <param name="pbData"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libadvapi32, SetLastError = true)]
+		internal static extern bool CryptSetProvParam(
+			[In] IntPtr prov,
+			[In] uint dwParam,
+			[In] byte[] pbData,
+			[In] uint dwFlags
+		);
+
+		/// <summary>
 		/// Функция получает первый или следующий сертификат в хранилище сертификатов.
 		/// Эта функция используется в цикле для того, чтобы последовательно получить все сертификаты в хранилище сертификатов.
 		/// </summary>

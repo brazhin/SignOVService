@@ -130,6 +130,22 @@ namespace SignService.CommonUtils
 		}
 
 		/// <summary>
+		/// Метод установки пароля для контейнера
+		/// </summary>
+		/// <param name="container"></param>
+		/// <param name="password"></param>
+		/// <returns></returns>
+		internal static bool EnterContainerPassword(IntPtr container, string password)
+		{
+			byte[] pin = Encoding.UTF8.GetBytes(password);
+
+			if (IsUnix)
+				return CApiExtUnix.CryptSetProvParam(container, PP_SIGNATURE_PIN, pin, 0);
+			else
+				return CApiExtWin.CryptSetProvParam2(container, PP_SIGNATURE_PIN, pin, 0);
+		}
+
+		/// <summary>
 		/// Метод получает экземпляр класса HashAlgorithm для каждой платформы с поддержкой гост указанного в сертификате
 		/// </summary>
 		/// <param name="certificate"></param>
