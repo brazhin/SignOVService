@@ -70,7 +70,7 @@ namespace SignService.Smev.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate)
+		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate, string password)
 		{
 			XmlDocument result = null;
 
@@ -78,7 +78,7 @@ namespace SignService.Smev.SoapSigners
 			{
 				case Mr.MR244:
 				case Mr.MR255:
-					result = this.SignMessage2XX(doc, certificate);
+					result = this.SignMessage2XX(doc, certificate, password);
 					break;
 				default:
 					throw new NotImplementedException("Неподдерживаемая версия методических рекомендаций.");
@@ -93,7 +93,7 @@ namespace SignService.Smev.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		private XmlDocument SignMessage2XX(XmlDocument xml, IntPtr certificate)
+		private XmlDocument SignMessage2XX(XmlDocument xml, IntPtr certificate, string password)
 		{
 			try
 			{
@@ -218,7 +218,7 @@ namespace SignService.Smev.SoapSigners
 				try
 				{
 					log.LogDebug($"Пытаемся вычислить подпись.");
-					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate, password);
 					log.LogDebug($"Вычисление подписи выполнено успешно.");
 				}
 				catch (Exception ex)

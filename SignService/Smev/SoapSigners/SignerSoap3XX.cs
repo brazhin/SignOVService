@@ -50,7 +50,7 @@ namespace SignService.Smev.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate)
+		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate, string password)
 		{
 			try
 			{
@@ -146,7 +146,7 @@ namespace SignService.Smev.SoapSigners
 				try
 				{
 					log.LogDebug($"Пытаемся вычислить подпись.");
-					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate, password);
 					log.LogDebug($"Вычисление подписи выполнено успешно.");
 				}
 				catch(Exception ex)

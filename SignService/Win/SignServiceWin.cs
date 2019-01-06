@@ -72,7 +72,7 @@ namespace SignService.Win
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		internal string SignSoap(string xml, Mr mr, string thumbprint)
+		internal string SignSoap(string xml, Mr mr, string thumbprint, string password)
 		{
 			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
 			var signer = SignerSoapHelper.CreateSigner(mr, loggerFactory);
@@ -93,7 +93,7 @@ namespace SignService.Win
 			log.LogDebug($"Пытаемся найти сертификат с указанным thumbprint: {thumbprint}.");
 			var certHandle = FindCertificate(thumbprint);
 
-			var signedXml = signer.SignMessageAsOv(doc, certHandle);
+			var signedXml = signer.SignMessageAsOv(doc, certHandle, password);
 			return signedXml.OuterXml;
 		}
 

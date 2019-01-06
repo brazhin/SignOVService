@@ -35,7 +35,7 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 		/// </summary>
 		/// <param name="prefix"></param>
 		/// <param name="certificate"></param>
-		public void ComputeSignatureWithoutPrivateKey(string prefix, IntPtr certificate)
+		public void ComputeSignatureWithoutPrivateKey(string prefix, IntPtr certificate, string password)
 		{
 			if (SignServiceUtils.IsUnix)
 			{
@@ -61,10 +61,13 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 			uint keySpec = CApiExtConst.AT_SIGNATURE;
 			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? UnixExtUtil.GetHandler(certificate, out keySpec) : Win32ExtUtil.GetHandler(certificate, out keySpec);
 
-			string password = "12345678";
-			if (!SignServiceUtils.EnterContainerPassword(cpHandle, password))
+			// Вводим пароль если это необходимо
+			if (!string.IsNullOrEmpty(password))
 			{
-				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+				if (!SignServiceUtils.EnterContainerPassword(cpHandle, password))
+				{
+					throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+				}
 			}
 
 			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) : 

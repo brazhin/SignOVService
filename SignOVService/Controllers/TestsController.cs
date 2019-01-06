@@ -207,7 +207,7 @@ namespace SignOVService.Controllers
 		{
 			try
 			{
-				var signedXml = provider.SignSoap(request.Soap, request.Mr, request.Thumbprint);
+				var signedXml = provider.SignSoap(request.Soap, request.Mr, request.Thumbprint, "");
 				return Ok(signedXml);
 			}
 			catch(Exception ex)
@@ -234,6 +234,7 @@ namespace SignOVService.Controllers
 
 				var mr = Int32.Parse(form["Mr"]);
 				var thumbprint = form["Thumbprint"];
+				var password = form["Password"];
 
 				string xml = string.Empty;
 				using (var stream = file.OpenReadStream())
@@ -243,7 +244,7 @@ namespace SignOVService.Controllers
 					xml = Encoding.UTF8.GetString(body);
 				}
 
-				var signedXml = provider.SignSoap(xml, (Mr)mr, thumbprint);
+				var signedXml = provider.SignSoap(xml, (Mr)mr, thumbprint, password);
 				return Ok(signedXml);
 			}
 			catch (Exception ex)
