@@ -3,6 +3,7 @@ using SignService.CommonUtils;
 using SignService.Smev.SoapSigners;
 using SignService.Unix.Api;
 using SignService.Unix.Gost;
+using SignService.Unix.Utils;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -137,12 +138,12 @@ namespace SignService.Unix
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal byte[] Sign(byte[]data, string thumbprint)
+		internal byte[] Sign(byte[]data, string thumbprint, string password)
 		{
 			try
 			{
 				IntPtr hCert = FindCertificate(thumbprint);
-				return Sign(data, hCert);
+				return Sign(data, hCert, password);
 			}
 			catch(Exception ex)
 			{
@@ -386,7 +387,7 @@ namespace SignService.Unix
 		/// <param name="hCert"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static byte[] Sign(byte[] data, IntPtr hCert)
+		internal static byte[] Sign(byte[] data, IntPtr hCert, string password)
 		{
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
 			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
@@ -442,6 +443,18 @@ namespace SignService.Unix
 				// Количество элементов массива в rgpbToBeSigned.
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
+
+				// Вводим пароль если это необходимо
+				if (!string.IsNullOrEmpty(password))
+				{
+					uint keySpec = CApiExtConst.AT_SIGNATURE;
+					var container = UnixExtUtil.GetHandler(hCert, out keySpec);
+
+					if (!SignServiceUtils.EnterContainerPassword(container, password))
+					{
+						throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+					}
+				}
 
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned

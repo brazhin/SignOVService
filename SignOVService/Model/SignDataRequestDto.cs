@@ -4,5 +4,6 @@
 	{
 		public string Thumbprint { get; set; }
 		public byte[] Data { get; set; }
+		public string Password { get; set; }
 	}
 }

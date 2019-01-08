@@ -7,5 +7,6 @@ namespace SignOVService.Model
 		public Mr Mr { get; set; }
 		public string Soap { get; set; }
 		public string Thumbprint { get; set; }
+		public string Password { get; set; }
 	}
 }

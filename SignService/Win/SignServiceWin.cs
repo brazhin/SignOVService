@@ -272,10 +272,10 @@ namespace SignService.Win
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal byte[] Sign(byte[] data, string thumbprint)
+		internal byte[] Sign(byte[] data, string thumbprint, string password)
 		{
 			IntPtr hCert = FindCertificate(thumbprint);
-			return Sign(data, hCert);
+			return Sign(data, hCert, password);
 		}
 
 		/// <summary>
@@ -355,7 +355,7 @@ namespace SignService.Win
 		/// <param name="hCert"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static byte[] Sign(byte[] data, IntPtr hCert)
+		internal static byte[] Sign(byte[] data, IntPtr hCert, string password)
 		{
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
 			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
@@ -411,6 +411,18 @@ namespace SignService.Win
 				// Количество элементов массива в rgpbToBeSigned.
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
+
+				// Вводим пароль если это необходимо
+				if (!string.IsNullOrEmpty(password))
+				{
+					uint keySpec = CApiExtConst.AT_SIGNATURE;
+					var container = Utils.Win32ExtUtil.GetHandler(hCert, out keySpec);
+
+					if (!SignServiceUtils.EnterContainerPassword(container, password))
+					{
+						throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+					}
+				}
 
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned

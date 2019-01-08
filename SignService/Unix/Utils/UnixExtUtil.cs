@@ -294,25 +294,24 @@ namespace SignService.Unix.Utils
 		[SecurityCritical]
 		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
 		{
-			bool bResult = false;
 			IntPtr phProv = IntPtr.Zero;
 
 			keySpec = CApiExtConst.AT_SIGNATURE;
 			bool isNeedCleenup = true;
 
 			// Get CSP handle
-			bResult = CApiExtUnix.CryptAcquireCertificatePrivateKey(
+			bool bResult = CApiExtUnix.CryptAcquireCertificatePrivateKey(
 				certHandle,
 				0,
 				IntPtr.Zero,
 				ref phProv,
 				ref keySpec,
 				ref isNeedCleenup
-				);
+			);
 
 			if (!bResult)
 			{
-				throw new Exception("CryptAcquireContext error #" + Marshal.GetLastWin32Error().ToString());
+				throw new Exception("Ошибка при попытке получить дескриптор контейнера ключей.");
 			}
 
 			return phProv;
