@@ -137,31 +137,27 @@ namespace SignService.Win.Utils
 		/// <returns></returns>
 		internal static byte[] SignValue(IntPtr hProv, int keyNumber, byte[] rgbHash, int dwFlags, int algId)
 		{
-			var prov = new SafeProvHandleCP(hProv);
-			var safeHashHandleCP = SetupHashAlgorithm(prov, rgbHash, algId);
-
-			try
+			using (var prov = new SafeProvHandleCP(hProv))
 			{
-				byte[] signArray = null;
-				uint signArraySize = 0;
-
-				if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+				using (var safeHashHandleCP = SetupHashAlgorithm(prov, rgbHash, algId))
 				{
-					throw new CryptographicException(Marshal.GetLastWin32Error());
+					byte[] signArray = null;
+					uint signArraySize = 0;
+
+					if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+					{
+						throw new CryptographicException(Marshal.GetLastWin32Error());
+					}
+
+					signArray = new byte[signArraySize];
+
+					if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+					{
+						throw new CryptographicException(Marshal.GetLastWin32Error());
+					}
+
+					return signArray;
 				}
-
-				signArray = new byte[signArraySize];
-
-				if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
-				{
-					throw new CryptographicException(Marshal.GetLastWin32Error());
-				}
-
-				return signArray;
-			}
-			finally
-			{
-				safeHashHandleCP.Dispose();
 			}
 		}
 
