@@ -90,7 +90,7 @@ namespace SignService.Win.Utils
 			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
 
 			// Вводим пароль
-			if (!SignServiceUtils.EnterContainerPassword(phProv, password))
+			if (!SignServiceUtils.EnterContainerPassword(phProv, keyContainerPassword))
 			{
 				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
 			}
