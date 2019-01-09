@@ -24,6 +24,14 @@ namespace SignServiceTests
 		private const string TestHashData = "TestHashData";
 		private const string TestSignData = "TestSignData";
 
+		private string Gost2001VipNetPassword = "12345678";
+		private string Gost2012_256VipNetPassword = "12345678";
+		private string Gost2012_512VipNetPassword = "12345678";
+
+		private string Gost2001CryptoProPassword = "123";
+		private string Gost2012_256CryptoProPassword = "";
+		private string Gost2012_512CryptoProPassword = "";
+
 
 		// VipNet tests
 
@@ -48,73 +56,73 @@ namespace SignServiceTests
 		[Test]
 		public void SignDataGost2001VipNetTest()
 		{
-			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2001VipNet);
+			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2001VipNet, Gost2001VipNetPassword);
 		}
 
 		[Test]
 		public void SignDataGost2012_256VipNetTest()
 		{
-			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2012_256VipNet);
+			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2012_256VipNet, Gost2012_256VipNetPassword);
 		}
 
 		[Test]
 		public void SignDataGost2012_512VipNetTest()
 		{
-			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2012_512VipNet);
+			SignDataExecuteTest(CspType.VipNet, TestSignData, Gost2012_512VipNet, Gost2012_512VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2001VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2001VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2001VipNet, Gost2001VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2012_256VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2012_256VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2012_256VipNet, Gost2012_256VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2012_512VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2012_512VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr300, Mr.MR300, Gost2012_512VipNet, Gost2012_512VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2001VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2001VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2001VipNet, Gost2001VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2012_256VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2012_256VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2012_256VipNet, Gost2012_256VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2012_512VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2012_512VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr244, Mr.MR244, Gost2012_512VipNet, Gost2012_512VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2001VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2001VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2001VipNet, Gost2001VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2012_256VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2012_256VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2012_256VipNet, Gost2012_256VipNetPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2012_512VipNetTest()
 		{
-			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2012_512VipNet);
+			SignSoapExecuteTest(CspType.VipNet, Mr255, Mr.MR255, Gost2012_512VipNet, Gost2012_512VipNetPassword);
 		}
 
 		// CryptoPro tests
@@ -140,73 +148,73 @@ namespace SignServiceTests
 		[Test]
 		public void SignDataGost2001CryptoProTest()
 		{
-			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2001CryptoPro);
+			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2001CryptoPro, Gost2001CryptoProPassword);
 		}
 
 		[Test]
 		public void SignDataGost2012_256CryptoProTest()
 		{
-			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2012_256CryptoPro);
+			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2012_256CryptoPro, Gost2012_256CryptoProPassword);
 		}
 
 		[Test]
 		public void SignDataGost2012_512CryptoProTest()
 		{
-			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2012_512CryptoPro);
+			SignDataExecuteTest(CspType.CryptoPro, TestSignData, Gost2012_512CryptoPro, Gost2012_512CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2001CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2001CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2001CryptoPro, Gost2001CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2012_256CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2012_256CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2012_256CryptoPro, Gost2012_256CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev3Gost2012_512CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2012_512CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr300, Mr.MR300, Gost2012_512CryptoPro, Gost2012_512CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2001CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2001CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2001CryptoPro, Gost2001CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2012_256CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2012_256CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2012_256CryptoPro, Gost2012_256CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev244Gost2012_512CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2012_512CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr244, Mr.MR244, Gost2012_512CryptoPro, Gost2012_512CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2001CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2001CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2001CryptoPro, Gost2001CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2012_256CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2012_256CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2012_256CryptoPro, Gost2012_256CryptoProPassword);
 		}
 
 		[Test]
 		public void SignSoapSmev255Gost2012_512CryptoProTest()
 		{
-			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2012_512CryptoPro);
+			SignSoapExecuteTest(CspType.CryptoPro, Mr255, Mr.MR255, Gost2012_512CryptoPro, Gost2012_512CryptoProPassword);
 		}
 
 		/// <summary>
@@ -236,7 +244,7 @@ namespace SignServiceTests
 		/// <param name="csp"></param>
 		/// <param name="directory"></param>
 		/// <param name="thumbprint"></param>
-		private void SignDataExecuteTest(CspType csp, string directory, string thumbprint)
+		private void SignDataExecuteTest(CspType csp, string directory, string thumbprint, string password)
 		{
 			SignServiceProvider provider = new SignServiceProvider(csp, new LoggerFactory());
 			var files = Utils.GetFilesList(directory);
@@ -244,7 +252,7 @@ namespace SignServiceTests
 			foreach (var file in files)
 			{
 				var data = Utils.GetStreamFromFile(file);
-				var sign = provider.Sign(data, thumbprint);
+				var sign = provider.Sign(data, thumbprint, password);
 
 				Assert.IsNotNull(sign);
 				Assert.IsTrue(sign.Length > 0);
@@ -265,7 +273,7 @@ namespace SignServiceTests
 		/// <param name="directory"></param>
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
-		private void SignSoapExecuteTest(CspType csp, string directory, Mr mr, string thumbprint)
+		private void SignSoapExecuteTest(CspType csp, string directory, Mr mr, string thumbprint, string password)
 		{
 			SignServiceProvider provider = new SignServiceProvider(csp, new LoggerFactory());
 			var files = Utils.GetFilesList(directory);
@@ -273,7 +281,7 @@ namespace SignServiceTests
 			foreach (var file in files)
 			{
 				var data = Utils.GetTextFromFile(file);
-				var signedXml = provider.SignSoap(data, mr, thumbprint);
+				var signedXml = provider.SignSoap(data, mr, thumbprint, password);
 
 				Assert.IsTrue(!string.IsNullOrEmpty(signedXml));
 			}
