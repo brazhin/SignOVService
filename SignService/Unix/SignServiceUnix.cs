@@ -309,7 +309,6 @@ namespace SignService.Unix
 		internal static CRYPT_OID_INFO GetHashAlg(string signatureAlgOid)
 		{
 			IntPtr sigId = CApiExtUnix.CryptFindOIDInfo(OidKeyType.Oid, signatureAlgOid, OidGroup.SignatureAlgorithm);
-
 			CRYPT_OID_INFO CertInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigId);
 
 			uint alg = CertInfo.Algid;
@@ -317,17 +316,8 @@ namespace SignService.Unix
 			IntPtr int_addr = Marshal.AllocHGlobal(Marshal.SizeOf(alg));
 			Marshal.WriteInt32(int_addr, (int)alg);
 
-			IntPtr sigs = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.SignatureAlgorithm);
-
-			CRYPT_OID_INFO sigsInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(sigs);
-
-			if (sigs == IntPtr.Zero)
-			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
-			}
-
+			// Получаем информацию об алгоритме хэш
 			IntPtr hass = CApiExtUnix.CryptFindOIDInfo(OidKeyType.AlgorithmID, int_addr, OidGroup.HashAlgorithm);
-
 			CRYPT_OID_INFO hassInfo = Marshal.PtrToStructure<CRYPT_OID_INFO>(hass);
 
 			if (hass == IntPtr.Zero)
