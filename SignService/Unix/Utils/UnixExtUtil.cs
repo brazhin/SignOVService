@@ -233,7 +233,7 @@ namespace SignService.Unix.Utils
 
 			if(hashHandle == IntPtr.Zero)
 			{
-				throw new Exception("Не удалось получить дескриптор хэша для подписи.");
+				throw new Exception("Не удалось получить дескриптор хэш для подписи.");
 			}
 
 			try
@@ -244,7 +244,7 @@ namespace SignService.Unix.Utils
 				// Вычисляем размер буфера под подпись
 				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 				{
-					throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш: {Marshal.GetLastWin32Error()}.");
+					throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш.");
 				}
 
 				signArray = new byte[signArraySize];
@@ -252,7 +252,7 @@ namespace SignService.Unix.Utils
 				// Получаем подпись
 				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 				{
-					throw new CryptographicException($"Не удалось вычислить подпись хэш: {Marshal.GetLastWin32Error()}.");
+					throw new CryptographicException($"Не удалось вычислить подпись хэш.");
 				}
 
 				return signArray;
@@ -323,7 +323,7 @@ namespace SignService.Unix.Utils
 
 			if (!bResult || phProv == IntPtr.Zero)
 			{
-				throw new Exception($"Ошибка при попытке получить дескриптор CSP. {Marshal.GetLastWin32Error()}");
+				throw new Exception($"Ошибка при попытке получить дескриптор CSP.");
 			}
 
 			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
