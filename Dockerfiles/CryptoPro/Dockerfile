@@ -15,7 +15,7 @@ RUN npm install
 #---------------------------------------------------------------------
 RUN cat /etc/*-release
 
-RUN apt-get update
+#RUN apt-get update
 #RUN apt-get install -y lsb lsb-core alien
 
 
@@ -27,9 +27,9 @@ RUN /tmp/dist/linux-amd64_deb/install.sh
 
 RUN /opt/cprocsp/sbin/amd64/cpconfig -license -view
 
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2001_CryptoPro/abc.000 /var/opt/cprocsp/keys/root/
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost2012.000 /var/opt/cprocsp/keys/root/
-RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gostrgos.000 /var/opt/cprocsp/keys/root/
+#RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2001_CryptoPro/abc.000 /var/opt/cprocsp/keys/root/
+RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost256c.000 /var/opt/cprocsp/keys/root/
+RUN mkdir -p /var/opt/cprocsp/keys/root/ && mv /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gost512c.000 /var/opt/cprocsp/keys/root/
 
 RUN chown root:root /var/opt/cprocsp/keys/root/ -R
 RUN chmod -R 777 /var/opt/cprocsp/keys/root/
@@ -38,34 +38,35 @@ USER root
 
 #RUN ls -la /var/opt/cprocsp/keys/root/
 
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost2012 -cont "\\\\.\\HDIMAGE\\gost2012"
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/omsk.cer -cont "\\\\.\\HDIMAGE\\abc"
-RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gostgos.cer -cont "\\\\.\\HDIMAGE\\gostrgos"
+#RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2001_CryptoPro/omsk.cer -cont "\\\\.\\HDIMAGE\\abc"
+RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_256_CryptoPro/gost256cp.cer -cont "\\\\.\\HDIMAGE\\gost256c"
+RUN /opt/cprocsp/bin/amd64/certmgr -inst -store uMy -file /tmp/cert/CryptoPro/Gost2012_512_CryptoPro/gost512cp.cer -cont "\\\\.\\HDIMAGE\\gost512c"
 
-RUN /opt/cprocsp/bin/amd64/csptest -passwd -change '' -cont "\\\\.\\HDIMAGE\\abc" -passwd 123
+#RUN /opt/cprocsp/bin/amd64/csptest -passwd -change '' -cont "\\\\.\\HDIMAGE\\abc" -passwd 123
+RUN /opt/cprocsp/bin/amd64/csptest -passwd -change '' -cont "\\\\.\\HDIMAGE\\gost256c" -passwd gost256cp
 
-USER root
-
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ocsp -mask 0xF
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ocsp_fmt -mask 0x39
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel tsp -mask 0xF
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel tsp_fmt -mask 0x39
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cades -mask 0xF
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cades_fmt -mask 0x39
-
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cpcsp -mask 0x3f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi10 -mask 0x3f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cptext -mask 0x3f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi20 -mask 0x3f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capilite -mask 0x3f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cryptsrv -mask 0x3f
-
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cpcsp_fmt -mask 0x7f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi10_fmt -mask 0x7f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ctext_fmt -mask 0x7f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi20_fmt -mask 0x7f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capilite_fmt -mask 0x7f
-RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cryptsrv_fmt -mask 0x7f
+#USER root
+#
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ocsp -mask 0xF
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ocsp_fmt -mask 0x39
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel tsp -mask 0xF
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel tsp_fmt -mask 0x39
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cades -mask 0xF
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cades_fmt -mask 0x39
+#
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cpcsp -mask 0x3f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi10 -mask 0x3f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cptext -mask 0x3f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi20 -mask 0x3f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capilite -mask 0x3f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cryptsrv -mask 0x3f
+#
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cpcsp_fmt -mask 0x7f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi10_fmt -mask 0x7f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel ctext_fmt -mask 0x7f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capi20_fmt -mask 0x7f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel capilite_fmt -mask 0x7f
+#RUN /opt/cprocsp/sbin/amd64/cpconfig -loglevel cryptsrv_fmt -mask 0x7f
 
 FROM microsoft/aspnetcore-build:2.0 AS build
 WORKDIR /src
