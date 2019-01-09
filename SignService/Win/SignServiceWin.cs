@@ -3,6 +3,7 @@ using SignService.CommonUtils;
 using SignService.Smev.SoapSigners;
 using SignService.Win.Api;
 using SignService.Win.Gost;
+using SignService.Win.Utils;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -388,6 +389,7 @@ namespace SignService.Win
 
 			// Выделяем память под хранение сертификата
 			GCHandle pGC = GCHandle.Alloc(hCert, GCHandleType.Pinned);
+			IntPtr cspHandle = IntPtr.Zero;
 
 			try
 			{
@@ -412,17 +414,10 @@ namespace SignService.Win
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
 
-				// Вводим пароль если это необходимо
-				if (!string.IsNullOrEmpty(password))
-				{
-					uint keySpec = CApiExtConst.AT_SIGNATURE;
-					var container = Utils.Win32ExtUtil.GetHandler(hCert, out keySpec);
-
-					if (!SignServiceUtils.EnterContainerPassword(container, password))
-					{
-						throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
-					}
-				}
+				// Обращаемся к csp с установкой связи с контейнером и установкой пароля, 
+				// т.к в csp установлен флаг кэширования при вызове метода CryptSignMessage будет использован csp с установленным паролем
+				uint keySpec = CApiExtConst.AT_SIGNATURE;
+				cspHandle = Win32ExtUtil.GetHandler(hCert, out keySpec, password);
 
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
@@ -442,6 +437,7 @@ namespace SignService.Win
 			}
 			finally
 			{
+				SignServiceUtils.ReleaseProvHandle(cspHandle);
 				Marshal.FreeHGlobal(rgpbToBeSigned);
 				pGC.Free();
 			}

@@ -390,24 +390,27 @@ namespace SignService.Unix
 		internal static byte[] Sign(byte[] data, IntPtr hCert, string password)
 		{
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
-			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
+			CRYPT_SIGN_MESSAGE_PARA pParams = new CRYPT_SIGN_MESSAGE_PARA
 			{
 				// Размер этой структуры в байтах
-				cbSize = (uint)Marshal.SizeOf(typeof(CApiExtConst.CRYPT_SIGN_MESSAGE_PARA)),
+				cbSize = (uint)Marshal.SizeOf(typeof(CRYPT_SIGN_MESSAGE_PARA)),
 				// Используемый тип кодирования
-				dwMsgEncodingType = CApiExtConst.PKCS_7_OR_X509_ASN_ENCODING,
+				dwMsgEncodingType = PKCS_7_OR_X509_ASN_ENCODING,
 				// Указатель на CERT_CONTEXT, который будет использоваться при подписании. 
 				// Для того чтобы контекст предоставил доступ к закрытому сигнатурному ключу,
 				// необходимо установить свойство CERT_KEY_PROV_INFO_PROP_ID или CERT_KEY_CONTEXT_PROP_ID
 				pSigningCert = hCert,
+
+				// Убираем запрос пароля
+				dwFlags = CRYPT_MESSAGE_SILENT_KEYSET_FLAG,
 
 				// Количество элементов в rgpMsgCert массиве CERT_CONTEXT структур.Если установлено ноль,
 				// в подписанное сообщение не включаются сертификаты.
 				cMsgCert = 1
 			};
 
-			CApiExtConst.CERT_CONTEXT contextCert = Marshal.PtrToStructure<CApiExtConst.CERT_CONTEXT>(hCert);
-			CApiExtConst.CERT_INFO certInfo = Marshal.PtrToStructure<CApiExtConst.CERT_INFO>(contextCert.pCertInfo);
+			CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(hCert);
+			CERT_INFO certInfo = Marshal.PtrToStructure<CERT_INFO>(contextCert.pCertInfo);
 
 			var signatureAlg = SignServiceUtils.GetSignatureAlg(certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId);
 			var cryptOidInfo = GetHashAlg(signatureAlg);
@@ -420,6 +423,7 @@ namespace SignService.Unix
 
 			// Выделяем память под хранение сертификата
 			GCHandle pGC = GCHandle.Alloc(hCert, GCHandleType.Pinned);
+			IntPtr cspHandle = IntPtr.Zero;
 
 			try
 			{
@@ -444,17 +448,10 @@ namespace SignService.Unix
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
 
-				// Вводим пароль если это необходимо
-				if (!string.IsNullOrEmpty(password))
-				{
-					uint keySpec = CApiExtConst.AT_SIGNATURE;
-					var container = UnixExtUtil.GetHandler(hCert, out keySpec);
-
-					if (!SignServiceUtils.EnterContainerPassword(container, password))
-					{
-						throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
-					}
-				}
+				// Обращаемся к csp с установкой связи с контейнером и установкой пароля, 
+				// т.к в csp установлен флаг кэширования при вызове метода CryptSignMessage будет использован csp с установленным паролем
+				uint keySpec = CApiExtConst.AT_SIGNATURE;
+				cspHandle = UnixExtUtil.GetHandler(hCert, out keySpec, password);
 
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
@@ -474,6 +471,7 @@ namespace SignService.Unix
 			}
 			finally
 			{
+				SignServiceUtils.ReleaseProvHandle(cspHandle);
 				Marshal.FreeHGlobal(rgpbToBeSigned);
 				pGC.Free();
 			}

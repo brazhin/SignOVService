@@ -59,24 +59,24 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 			GetDigest(hash, prefix);
 
 			uint keySpec = CApiExtConst.AT_SIGNATURE;
-			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? UnixExtUtil.GetHandler(certificate, out keySpec) : Win32ExtUtil.GetHandler(certificate, out keySpec);
 
-			// Вводим пароль если это необходимо
-			if (!string.IsNullOrEmpty(password))
+			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? 
+				UnixExtUtil.GetHandler(certificate, out keySpec, password) : 
+				Win32ExtUtil.GetHandler(certificate, out keySpec, password);
+
+			try
 			{
-				if (!SignServiceUtils.EnterContainerPassword(cpHandle, password))
-				{
-					throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
-				}
+				byte[] sign = (SignServiceUtils.IsUnix) ? 
+					UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) :
+					Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
+
+				Array.Reverse(sign);
+				m_signature.SignatureValue = sign;
 			}
-
-			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) : 
-				Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
-
-			Array.Reverse(sign);
-			m_signature.SignatureValue = sign;
-
-			SignServiceUtils.ReleaseProvHandle(cpHandle);
+			finally
+			{
+				SignServiceUtils.ReleaseProvHandle(cpHandle);
+			}
 		}
 
 		/// <summary>

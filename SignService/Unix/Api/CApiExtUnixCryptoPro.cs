@@ -13,6 +13,31 @@ namespace SignService.Unix.Api
 		const string libCapi20 = "/opt/cprocsp/lib/amd64/libcapi20.so";
 
 		/// <summary>
+		/// Функция получения статус кода ошибки
+		/// </summary>
+		/// <returns></returns>
+		[DllImport(libCapi20, SetLastError = true)]
+		internal static extern int GetLastError();
+
+		/// <summary>
+		/// Функция получает параметры криптопровайдера
+		/// </summary>
+		/// <param name="hProv"></param>
+		/// <param name="dwParam"></param>
+		/// <param name="pbData"></param>
+		/// <param name="pdwDataLen"></param>
+		/// <param name="dwFlags"></param>
+		/// <returns></returns>
+		[DllImport(libCapi20, SetLastError = true)]
+		internal static extern bool CryptGetProvParam(
+			IntPtr hProv,
+			uint dwParam,
+			byte[] pbData,
+			ref uint pdwDataLen,
+			uint dwFlags
+		);
+
+		/// <summary>
 		/// Функция производит установку параметров криптопровайдера
 		/// </summary>
 		/// <param name="prov"></param>

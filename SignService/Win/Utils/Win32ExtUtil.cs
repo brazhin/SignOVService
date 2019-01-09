@@ -64,7 +64,7 @@ namespace SignService.Win.Utils
 		/// <param name="keySpec"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
+		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec, string password)
 		{
 			bool bResult = false;
 			IntPtr phProv = IntPtr.Zero;
@@ -75,7 +75,7 @@ namespace SignService.Win.Utils
 			// Get CSP handle
 			bResult = CApiExtWin.CryptAcquireCertificatePrivateKey(
 				certHandle,
-				0,
+				CRYPT_ACQUIRE_SILENT_FLAG | CRYPT_ACQUIRE_CACHE_FLAG, // Флаг указывающий, что если указан неверный пароль, вместо повторного запроса, вернуть ошибку
 				IntPtr.Zero,
 				ref phProv,
 				ref keySpec,
@@ -84,7 +84,15 @@ namespace SignService.Win.Utils
 
 			if (!bResult)
 			{
-				throw new Exception("CryptAcquireContext error #" + Marshal.GetLastWin32Error().ToString());
+				throw new Exception($"Ошибка при попытке получить дескриптор CSP. {Marshal.GetLastWin32Error()}");
+			}
+
+			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
+
+			// Вводим пароль
+			if (!SignServiceUtils.EnterContainerPassword(phProv, password))
+			{
+				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
 			}
 
 			return phProv;
@@ -129,25 +137,32 @@ namespace SignService.Win.Utils
 		/// <returns></returns>
 		internal static byte[] SignValue(IntPtr hProv, int keyNumber, byte[] rgbHash, int dwFlags, int algId)
 		{
-			byte[] signArray = null;
-			uint signArraySize = 0;
-
 			var prov = new SafeProvHandleCP(hProv);
 			var safeHashHandleCP = SetupHashAlgorithm(prov, rgbHash, algId);
 
-			if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			try
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				byte[] signArray = null;
+				uint signArraySize = 0;
+
+				if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+				{
+					throw new CryptographicException(Marshal.GetLastWin32Error());
+				}
+
+				signArray = new byte[signArraySize];
+
+				if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+				{
+					throw new CryptographicException(Marshal.GetLastWin32Error());
+				}
+
+				return signArray;
 			}
-
-			signArray = new byte[signArraySize];
-
-			if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			finally
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				safeHashHandleCP.Dispose();
 			}
-
-			return signArray;
 		}
 
 		/// <summary>

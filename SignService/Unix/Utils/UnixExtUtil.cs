@@ -11,7 +11,7 @@ namespace SignService.Unix.Utils
 {
 	internal class UnixExtUtil
 	{
-		private static long CRYPT_VERIFYCONTEXT = 0xF0000000;
+		//private static long CRYPT_VERIFYCONTEXT = 0xF0000000;
 		private static object internalSyncObject;
 
 		private static IntPtr unsafeGost2001ProvHandle;
@@ -204,7 +204,7 @@ namespace SignService.Unix.Utils
 		[SecurityCritical]
 		internal static void AcquireCSP(CspParameters param, ref IntPtr hProv)
 		{
-			uint num = (uint)CRYPT_VERIFYCONTEXT;// uint.MaxValue; // CRYPT_DEFAULT_CONTAINER_OPTIONAL
+			uint num = CRYPT_VERIFYCONTEXT | CRYPT_SILENT;// uint.MaxValue; // CRYPT_DEFAULT_CONTAINER_OPTIONAL
 
 			if ((param.Flags & CspProviderFlags.UseMachineKeyStore) != CspProviderFlags.NoFlags)
 			{
@@ -213,7 +213,7 @@ namespace SignService.Unix.Utils
 
 			if (!CApiExtUnix.CryptAcquireContext(ref hProv, param.KeyContainerName, param.ProviderName, (uint)param.ProviderType, num))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException("Ошибка при попытке получить дескриптор критопровайдера.");
 			}
 		}
 
@@ -229,26 +229,38 @@ namespace SignService.Unix.Utils
 		[SecurityCritical]
 		internal static byte[] SignValue(IntPtr hProv, int keyNumber, byte[] rgbHash, int dwFlags, int algId)
 		{
-			byte[] signArray = null;
-			uint signArraySize = 0;
+			IntPtr hashHandle = SetupHashAlgorithm(hProv, rgbHash, algId);
 
-			IntPtr safeHashHandleCP = SetupHashAlgorithm(hProv, rgbHash, algId);
-
-			if (!CApiExtUnix.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			if(hashHandle == IntPtr.Zero)
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new Exception("Не удалось получить дескриптор хэша для подписи.");
 			}
 
-			signArray = new byte[signArraySize];
-
-			if (!CApiExtUnix.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+			try
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				byte[] signArray = null;
+				uint signArraySize = 0;
+
+				// Вычисляем размер буфера под подпись
+				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+				{
+					throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш: {Marshal.GetLastWin32Error()}.");
+				}
+
+				signArray = new byte[signArraySize];
+
+				// Получаем подпись
+				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
+				{
+					throw new CryptographicException($"Не удалось вычислить подпись хэш: {Marshal.GetLastWin32Error()}.");
+				}
+
+				return signArray;
 			}
-
-			CApiExtUnix.CryptDestroyHash(safeHashHandleCP);
-
-			return signArray;
+			finally
+			{
+				SignServiceUtils.DestroyHashHandle(hashHandle);
+			}
 		}
 
 		/// <summary>
@@ -292,7 +304,7 @@ namespace SignService.Unix.Utils
 		/// <param name="keySpec"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec)
+		internal static IntPtr GetHandler(IntPtr certHandle, out uint keySpec, string password)
 		{
 			IntPtr phProv = IntPtr.Zero;
 
@@ -302,16 +314,24 @@ namespace SignService.Unix.Utils
 			// Get CSP handle
 			bool bResult = CApiExtUnix.CryptAcquireCertificatePrivateKey(
 				certHandle,
-				0,
+				CRYPT_ACQUIRE_SILENT_FLAG | CRYPT_ACQUIRE_CACHE_FLAG, // Флаг указывающий, что если указан неверный пароль, вместо повторного запроса, вернуть ошибку
 				IntPtr.Zero,
 				ref phProv,
 				ref keySpec,
 				ref isNeedCleenup
 			);
 
-			if (!bResult)
+			if (!bResult || phProv == IntPtr.Zero)
 			{
-				throw new Exception("Ошибка при попытке получить дескриптор контейнера ключей.");
+				throw new Exception($"Ошибка при попытке получить дескриптор CSP. {Marshal.GetLastWin32Error()}");
+			}
+
+			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
+
+			// Вводим пароль
+			if (!SignServiceUtils.EnterContainerPassword(phProv, keyContainerPassword))
+			{
+				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
 			}
 
 			return phProv;
