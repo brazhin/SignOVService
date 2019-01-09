@@ -360,6 +360,9 @@ namespace SignService.Win
 				// необходимо установить свойство CERT_KEY_PROV_INFO_PROP_ID или CERT_KEY_CONTEXT_PROP_ID
 				pSigningCert = hCert,
 
+				// Убираем запрос пароля
+				dwFlags = CRYPT_MESSAGE_SILENT_KEYSET_FLAG,
+
 				// Количество элементов в rgpMsgCert массиве CERT_CONTEXT структур.Если установлено ноль,
 				// в подписанное сообщение не включаются сертификаты.
 				cMsgCert = 1
@@ -413,14 +416,14 @@ namespace SignService.Win
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
 				if (!CApiExtWin.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException($"Ошибка при подписании данных. Первый вызов CryptSignMessage вернул false. Код ошибки: {Marshal.GetLastWin32Error()}.");
+					throw new CryptographicException($"Ошибка при попытке подписать данные. Не удалось вычислить размер буфера для подписи. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
 
 				signArray = new byte[signArrayLength];
 
 				if (!CApiExtWin.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException($"Ошибка при подписании данных. Второй вызов CryptSignMessage вернул false. Код ошибки: {Marshal.GetLastWin32Error()}.");
+					throw new CryptographicException($"Ошибка при попытке подписать данные. Не удалось вычислить подпись. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
 
 				return signArray;
