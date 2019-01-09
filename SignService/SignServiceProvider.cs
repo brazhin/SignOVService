@@ -39,7 +39,7 @@ namespace SignService
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		public string SignSoap(string xml, Mr mr, string thumbprint)
+		public string SignSoap(string xml, Mr mr, string thumbprint, string keyContainerPassword)
 		{
 			string signedXml = string.Empty;
 
@@ -47,13 +47,13 @@ namespace SignService
 			{
 				log.LogDebug($"Попытка выполнить метод подписания XML под Unix платформой.");
 				var unixService = new SignServiceUnix(loggerFactory);
-				signedXml = unixService.SignSoap(xml, mr, thumbprint);
+				signedXml = unixService.SignSoap(xml, mr, thumbprint, keyContainerPassword);
 			}
 			else
 			{
 				log.LogDebug($"Попытка выполнить метод подписания XML под Windows платформой.");
 				var winService = new SignServiceWin(loggerFactory);
-				signedXml = winService.SignSoap(xml, mr, thumbprint);
+				signedXml = winService.SignSoap(xml, mr, thumbprint, keyContainerPassword);
 			}
 
 			return signedXml;
@@ -178,17 +178,17 @@ namespace SignService
 		/// <param name="data"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		public byte[] Sign(byte[] data, string thumbprint)
+		public byte[] Sign(byte[] data, string thumbprint, string keyContainerPassword)
 		{
 			if (SignServiceUtils.IsUnix)
 			{
 				var unixService = new SignServiceUnix(loggerFactory);
-				return unixService.Sign(data, thumbprint);
+				return unixService.Sign(data, thumbprint, keyContainerPassword);
 			}
 			else
 			{
 				var winService = new SignServiceWin(loggerFactory);
-				return winService.Sign(data, thumbprint);
+				return winService.Sign(data, thumbprint, keyContainerPassword);
 			}
 		}
 

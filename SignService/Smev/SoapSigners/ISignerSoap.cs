@@ -5,7 +5,7 @@ namespace SignService.Smev.SoapSigners
 {
 	internal interface ISignerSoap
 	{
-		XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate);
+		XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate, string password);
 
 		SignedTag ElemForSign { get; set; }
 		bool SignWithId { get; set; }

@@ -8,6 +8,25 @@ namespace SignService
 	/// </summary>
 	internal class CApiExtConst
 	{
+		internal static uint PP_KEYEXCHANGE_PIN = 0x20;
+		internal static uint PP_SIGNATURE_PIN = 0x21;
+
+		internal static uint PP_VERIFYPASS_FLAG = 0x01;
+
+		// CryptAcquireCertificatePrivateKey const
+		internal static uint CRYPT_ACQUIRE_CACHE_FLAG = 0x00000001;
+		internal static uint CRYPT_ACQUIRE_USE_PROV_INFO_FLAG = 0x00000002;
+
+		internal static uint CRYPT_MESSAGE_SILENT_KEYSET_FLAG = CRYPT_ACQUIRE_SILENT_FLAG;
+		internal static uint CRYPT_ACQUIRE_SILENT_FLAG = 0x00000040;
+		internal static uint CRYPT_SILENT = 0x40;
+
+		internal static uint CRYPT_VERIFYCONTEXT = 0xF0000000;
+
+		internal static uint PP_NAME = 0x4;
+		internal static uint PP_CONTAINER = 0x6;
+
+
 		/// <summary>
 		/// Параметры необходимые для метода формирования открепленной подписи
 		/// </summary>

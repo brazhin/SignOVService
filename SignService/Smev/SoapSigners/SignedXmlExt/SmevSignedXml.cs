@@ -82,7 +82,7 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 		/// </summary>
 		/// <param name="prefix"></param>
 		/// <param name="certificate"></param>
-		public void ComputeSignatureWithoutPrivateKey(string prefix, IntPtr certificate)
+		public void ComputeSignatureWithoutPrivateKey(string prefix, IntPtr certificate, string password)
 		{
 			if (SignServiceUtils.IsUnix)
 			{
@@ -104,15 +104,23 @@ namespace SignService.Smev.SoapSigners.SignedXmlExt
 			GetDigest(hash, prefix);
 
 			uint keySpec = CApiExtConst.AT_SIGNATURE;
-			IntPtr cpHandle = (SignServiceUtils.IsUnix) ? UnixExtUtil.GetHandler(certificate, out keySpec) : Win32ExtUtil.GetHandler(certificate, out keySpec);
+			IntPtr cpHandle = (SignServiceUtils.IsUnix) ?
+				UnixExtUtil.GetHandler(certificate, out keySpec, password) :
+				Win32ExtUtil.GetHandler(certificate, out keySpec, password);
 
-			byte[] sign = (SignServiceUtils.IsUnix) ? UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) :
-				Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
+			try
+			{
+				byte[] sign = (SignServiceUtils.IsUnix) ? 
+					UnixExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId) :
+					Win32ExtUtil.SignValue(cpHandle, (int)keySpec, hash.Hash, (int)0, algId);
 
-			Array.Reverse(sign);
-			m_signature.SignatureValue = sign;
-
-			SignServiceUtils.ReleaseProvHandle(cpHandle);
+				Array.Reverse(sign);
+				m_signature.SignatureValue = sign;
+			}
+			finally
+			{
+				SignServiceUtils.ReleaseProvHandle(cpHandle);
+			}
 		}
 
 		/// <summary>

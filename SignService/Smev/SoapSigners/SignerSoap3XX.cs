@@ -50,13 +50,13 @@ namespace SignService.Smev.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate)
+		public XmlDocument SignMessageAsOv(XmlDocument doc, IntPtr certificate, string password)
 		{
 			try
 			{
 				// Подписываем вложения
 				log.LogDebug("Пытаемся подписать вложения.");
-				doc = SignAttachmentsOv(doc, certificate);
+				doc = SignAttachmentsOv(doc, certificate, password);
 			}
 			catch (Exception ex)
 			{
@@ -146,7 +146,7 @@ namespace SignService.Smev.SoapSigners
 				try
 				{
 					log.LogDebug($"Пытаемся вычислить подпись.");
-					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate);
+					signedXml.ComputeSignatureWithoutPrivateKey(xmldsigPrefix, certificate, password);
 					log.LogDebug($"Вычисление подписи выполнено успешно.");
 				}
 				catch(Exception ex)
@@ -254,7 +254,7 @@ namespace SignService.Smev.SoapSigners
 		/// <param name="doc"></param>
 		/// <param name="certificate"></param>
 		/// <returns></returns>
-		private XmlDocument SignAttachmentsOv(XmlDocument doc, IntPtr certificate)
+		private XmlDocument SignAttachmentsOv(XmlDocument doc, IntPtr certificate, string password)
 		{
 			XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
 
@@ -349,12 +349,12 @@ namespace SignService.Smev.SoapSigners
 									if (SignServiceUtils.IsUnix)
 									{
 										log.LogDebug($"Выполняем подпись под Unix платформой.");
-										signature = SignServiceUnix.Sign(content.Content, certificate);
+										signature = SignServiceUnix.Sign(content.Content, certificate, password);
 									}
 									else
 									{
 										log.LogDebug($"Выполняем подпись под Windows платформой.");
-										signature = SignServiceWin.Sign(content.Content, certificate);
+										signature = SignServiceWin.Sign(content.Content, certificate, password);
 									}
 								}
 								catch(Exception ex)

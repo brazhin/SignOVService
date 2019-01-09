@@ -3,6 +3,7 @@ using SignService.CommonUtils;
 using SignService.Smev.SoapSigners;
 using SignService.Win.Api;
 using SignService.Win.Gost;
+using SignService.Win.Utils;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -72,7 +73,7 @@ namespace SignService.Win
 		/// <param name="mr"></param>
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
-		internal string SignSoap(string xml, Mr mr, string thumbprint)
+		internal string SignSoap(string xml, Mr mr, string thumbprint, string password)
 		{
 			log.LogDebug($"Пытаемся получить объект для выполнения подписи согласно версии МР: {mr}.");
 			var signer = SignerSoapHelper.CreateSigner(mr, loggerFactory);
@@ -93,7 +94,7 @@ namespace SignService.Win
 			log.LogDebug($"Пытаемся найти сертификат с указанным thumbprint: {thumbprint}.");
 			var certHandle = FindCertificate(thumbprint);
 
-			var signedXml = signer.SignMessageAsOv(doc, certHandle);
+			var signedXml = signer.SignMessageAsOv(doc, certHandle, password);
 			return signedXml.OuterXml;
 		}
 
@@ -272,10 +273,10 @@ namespace SignService.Win
 		/// <param name="thumbprint"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal byte[] Sign(byte[] data, string thumbprint)
+		internal byte[] Sign(byte[] data, string thumbprint, string password)
 		{
 			IntPtr hCert = FindCertificate(thumbprint);
-			return Sign(data, hCert);
+			return Sign(data, hCert, password);
 		}
 
 		/// <summary>
@@ -355,7 +356,7 @@ namespace SignService.Win
 		/// <param name="hCert"></param>
 		/// <returns></returns>
 		[SecurityCritical]
-		internal static byte[] Sign(byte[] data, IntPtr hCert)
+		internal static byte[] Sign(byte[] data, IntPtr hCert, string password)
 		{
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
 			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
@@ -388,6 +389,7 @@ namespace SignService.Win
 
 			// Выделяем память под хранение сертификата
 			GCHandle pGC = GCHandle.Alloc(hCert, GCHandleType.Pinned);
+			IntPtr cspHandle = IntPtr.Zero;
 
 			try
 			{
@@ -412,6 +414,11 @@ namespace SignService.Win
 				// Этот параметр должен быть установлен в единицу, если для параметра fDetachedSignature установлено значение TRUE
 				uint cToBeSigned = 1;
 
+				// Обращаемся к csp с установкой связи с контейнером и установкой пароля, 
+				// т.к в csp установлен флаг кэширования при вызове метода CryptSignMessage будет использован csp с установленным паролем
+				uint keySpec = CApiExtConst.AT_SIGNATURE;
+				cspHandle = Win32ExtUtil.GetHandler(hCert, out keySpec, password);
+
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
 				if (!CApiExtWin.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
@@ -430,6 +437,7 @@ namespace SignService.Win
 			}
 			finally
 			{
+				SignServiceUtils.ReleaseProvHandle(cspHandle);
 				Marshal.FreeHGlobal(rgpbToBeSigned);
 				pGC.Free();
 			}

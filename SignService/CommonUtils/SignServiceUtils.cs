@@ -130,6 +130,26 @@ namespace SignService.CommonUtils
 		}
 
 		/// <summary>
+		/// Метод установки пароля для контейнера
+		/// </summary>
+		/// <param name="container"></param>
+		/// <param name="password"></param>
+		/// <returns></returns>
+		internal static bool EnterContainerPassword(IntPtr container, string password)
+		{
+			byte[] keyContainerPassword = Encoding.UTF8.GetBytes(password);
+
+			if (IsUnix)
+			{
+				return CApiExtUnix.CryptSetProvParam(container, PP_SIGNATURE_PIN, keyContainerPassword, 0);
+			}
+			else
+			{
+				return CApiExtWin.CryptSetProvParam2(container, PP_SIGNATURE_PIN, keyContainerPassword, 0);
+			}
+		}
+
+		/// <summary>
 		/// Метод получает экземпляр класса HashAlgorithm для каждой платформы с поддержкой гост указанного в сертификате
 		/// </summary>
 		/// <param name="certificate"></param>
@@ -261,9 +281,31 @@ namespace SignService.CommonUtils
 		internal static void ReleaseProvHandle(IntPtr provHandle)
 		{
 			if (SignServiceUtils.IsUnix)
-				CApiExtUnix.CryptReleaseContext(provHandle, 0);
+			{
+				if(provHandle != IntPtr.Zero)
+					CApiExtUnix.CryptReleaseContext(provHandle, 0);
+			}
 			else
-				CApiExtWin.CryptReleaseContext(provHandle, 0);
+			{
+				if(provHandle != IntPtr.Zero)
+					CApiExtWin.CryptReleaseContext(provHandle, 0);
+			}
+		}
+
+		/// <summary>
+		/// Метод освобождает контекст хэша
+		/// </summary>
+		/// <param name="hashHandle"></param>
+		[SecurityCritical]
+		internal static void DestroyHashHandle(IntPtr hashHandle)
+		{
+			if (IsUnix)
+			{
+				if(hashHandle != IntPtr.Zero)
+					CApiExtUnix.CryptDestroyHash(hashHandle);
+				else
+					CApiExtWin.CryptDestroyHash(hashHandle);
+			}
 		}
 
 		/// <summary>

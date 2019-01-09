@@ -40,6 +40,7 @@ namespace SignOVService.Controllers
 				file.CopyTo(stream);
 
 				string thumbprint = form["thumbprint"];
+				string password = form["password"];
 
 				if (string.IsNullOrEmpty(thumbprint))
 				{
@@ -47,7 +48,7 @@ namespace SignOVService.Controllers
 				}
 
 				// Подписываем данные
-				var sign = provider.Sign(stream.ToArray(), thumbprint);
+				var sign = provider.Sign(stream.ToArray(), thumbprint, password);
 
 				return Ok(sign);
 			}
@@ -68,7 +69,7 @@ namespace SignOVService.Controllers
 			try
 			{
 				// Подписываем данные
-				var sign = provider.Sign(request.Data, request.Thumbprint);
+				var sign = provider.Sign(request.Data, request.Thumbprint, request.Password);
 				return Ok(Convert.ToBase64String(sign));
 			}
 			catch (Exception ex)
@@ -96,6 +97,7 @@ namespace SignOVService.Controllers
 				file.CopyTo(stream);
 
 				string thumbprint = form["thumbprint"];
+				string password = form["password"];
 
 				if (string.IsNullOrEmpty(thumbprint))
 				{
@@ -103,7 +105,7 @@ namespace SignOVService.Controllers
 				}
 
 				// Подписываем данные
-				var sign = provider.Sign(stream.ToArray(), thumbprint);
+				var sign = provider.Sign(stream.ToArray(), thumbprint, password);
 
 				return File(sign, "application/x-msdownload", "sign.sig");
 			}
@@ -207,7 +209,7 @@ namespace SignOVService.Controllers
 		{
 			try
 			{
-				var signedXml = provider.SignSoap(request.Soap, request.Mr, request.Thumbprint);
+				var signedXml = provider.SignSoap(request.Soap, request.Mr, request.Thumbprint, request.Password);
 				return Ok(signedXml);
 			}
 			catch(Exception ex)
@@ -234,6 +236,7 @@ namespace SignOVService.Controllers
 
 				var mr = Int32.Parse(form["Mr"]);
 				var thumbprint = form["Thumbprint"];
+				var password = form["Password"];
 
 				string xml = string.Empty;
 				using (var stream = file.OpenReadStream())
@@ -243,7 +246,7 @@ namespace SignOVService.Controllers
 					xml = Encoding.UTF8.GetString(body);
 				}
 
-				var signedXml = provider.SignSoap(xml, (Mr)mr, thumbprint);
+				var signedXml = provider.SignSoap(xml, (Mr)mr, thumbprint, password);
 				return Ok(signedXml);
 			}
 			catch (Exception ex)
