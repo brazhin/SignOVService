@@ -169,11 +169,11 @@ namespace SignService.Win.Utils
 			[SecurityCritical]
 			get
 			{
-				if (safeGost2001ProvHandle == null)
+				if (safeGost2001ProvHandle == null || safeGost2001ProvHandle.IsClosed || safeGost2001ProvHandle.IsInvalid)
 				{
 					lock (InternalSyncObject)
 					{
-						if (safeGost2001ProvHandle == null)
+						if (safeGost2001ProvHandle == null || safeGost2001ProvHandle.IsClosed || safeGost2001ProvHandle.IsInvalid)
 						{
 							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2001);
 							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
@@ -195,11 +195,11 @@ namespace SignService.Win.Utils
 			[SecurityCritical]
 			get
 			{
-				if (safeGost2012_256ProvHandle == null)
+				if (safeGost2012_256ProvHandle == null || safeGost2012_256ProvHandle.IsClosed || safeGost2012_256ProvHandle.IsInvalid)
 				{
 					lock (InternalSyncObject)
 					{
-						if (safeGost2012_256ProvHandle == null)
+						if (safeGost2012_256ProvHandle == null || safeGost2012_256ProvHandle.IsClosed || safeGost2012_256ProvHandle.IsInvalid)
 						{
 							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_256);
 							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
@@ -221,11 +221,11 @@ namespace SignService.Win.Utils
 			[SecurityCritical]
 			get
 			{
-				if (safeGost2012_512ProvHandle == null)
+				if (safeGost2012_512ProvHandle == null || safeGost2012_512ProvHandle.IsClosed || safeGost2012_512ProvHandle.IsInvalid)
 				{
 					lock (InternalSyncObject)
 					{
-						if (safeGost2012_512ProvHandle == null)
+						if (safeGost2012_512ProvHandle == null || safeGost2012_512ProvHandle.IsClosed || safeGost2012_512ProvHandle.IsInvalid)
 						{
 							CspParameters cspParameter = SignServiceUtils.GetCspParameters(GostEnum.Gost2012_512);
 							SafeProvHandleCP safeProvHandleCP = AcquireProvHandle(cspParameter);
