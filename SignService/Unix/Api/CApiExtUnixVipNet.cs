@@ -14,6 +14,13 @@ namespace SignService.Unix.Api
 		private const string libcrypt32 = "/opt/itcs/lib/libcrypt32.so";
 
 		/// <summary>
+		/// Функция получения статус кода ошибки
+		/// </summary>
+		/// <returns></returns>
+		[DllImport(libcrypt32, SetLastError = true)]
+		internal static extern int GetLastError();
+
+		/// <summary>
 		/// Функция производит установку параметров криптопровайдера
 		/// </summary>
 		/// <param name="prov"></param>

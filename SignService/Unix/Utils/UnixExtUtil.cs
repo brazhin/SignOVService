@@ -50,14 +50,14 @@ namespace SignService.Unix.Utils
 
 				if (!CApiExtUnix.CryptHashData(hHash, temp, (uint)cbSize, 0))
 				{
-					throw new CryptographicException(Marshal.GetLastWin32Error());
+					throw new CryptographicException($"Ошибка при попытке заполнить хэш объект данными. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				temp = null;
 			}
 			catch (Exception ex)
 			{
-				throw new Exception("Ошибка в методе HashData. " + ex.Message);
+				throw new Exception($"Ошибка при попытке заполнить хэш объект данными. {ex.Message}.");
 			}
 		}
 
@@ -70,15 +70,19 @@ namespace SignService.Unix.Utils
 		internal static byte[] EndHash(IntPtr hHash)
 		{
 			uint num = 0;
+
 			if (!CApiExtUnix.CryptGetHashParam(hHash, 2, null, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке вычислить размер буфера для данных, " +
+					$"управляющих операциями объекта функции хэширования. Код ошибки: {CApiExtUnix.GetLastError()}."
+				);
 			}
 
 			byte[] numArray = new byte[num];
+
 			if (!CApiExtUnix.CryptGetHashParam(hHash, 2, numArray, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить данные, управляющие операциями объекта функции хэширования. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 
 			return numArray;
@@ -163,7 +167,7 @@ namespace SignService.Unix.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод создания дескриптора объекта функции хэширования
 		/// </summary>
 		/// <param name="hProv"></param>
 		/// <param name="algid"></param>
@@ -173,12 +177,12 @@ namespace SignService.Unix.Utils
 		{
 			if (!CApiExtUnix.CryptCreateHash(hProv, (uint)algid, IntPtr.Zero, (uint)0, ref hHash))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при создании дескриптора объекта функции хеширования. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получения дескриптора CSP
 		/// </summary>
 		/// <param name="parameters"></param>
 		/// <returns></returns>
@@ -197,7 +201,7 @@ namespace SignService.Unix.Utils
 		}
 
 		/// <summary>
-		/// 
+		/// Метод получения дескриптора CSP
 		/// </summary>
 		/// <param name="param"></param>
 		/// <param name="hProv"></param>
@@ -213,7 +217,7 @@ namespace SignService.Unix.Utils
 
 			if (!CApiExtUnix.CryptAcquireContext(ref hProv, param.KeyContainerName, param.ProviderName, (uint)param.ProviderType, num))
 			{
-				throw new CryptographicException("Ошибка при попытке получить дескриптор критопровайдера.");
+				throw new CryptographicException($"Ошибка при попытке получить дескриптор критопровайдера. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 		}
 
@@ -244,7 +248,7 @@ namespace SignService.Unix.Utils
 				// Вычисляем размер буфера под подпись
 				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 				{
-					throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш.");
+					throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				signArray = new byte[signArraySize];
@@ -252,7 +256,7 @@ namespace SignService.Unix.Utils
 				// Получаем подпись
 				if (!CApiExtUnix.CryptSignHash(hashHandle, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 				{
-					throw new CryptographicException($"Не удалось вычислить подпись хэш.");
+					throw new CryptographicException($"Не удалось вычислить подпись хэш. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				return signArray;
@@ -281,17 +285,19 @@ namespace SignService.Unix.Utils
 
 			if (!CApiExtUnix.CryptGetHashParam(invalidHandle, 2, null, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить данные, управляющие операциями объекта функции хеширования. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 
 			if ((ulong)((int)rgbHash.Length) != (ulong)num)
 			{
-				throw new CryptographicException(-2146893822);
+				throw new CryptographicException($"Ошибка при получении хэш по заданному алгоритму. Код ошибки: {-2146893822}.");
 			}
 
 			if (!CApiExtUnix.CryptSetHashParam(invalidHandle, 2, rgbHash, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при установке начального содержимого хэша и выборе особенных алгоритмов хеширования. " +
+					$"Код ошибки: {CApiExtUnix.GetLastError()}."
+				);
 			}
 
 			return invalidHandle;
@@ -308,7 +314,7 @@ namespace SignService.Unix.Utils
 		{
 			IntPtr phProv = IntPtr.Zero;
 
-			keySpec = CApiExtConst.AT_SIGNATURE;
+			keySpec = AT_SIGNATURE;
 			bool isNeedCleenup = true;
 
 			// Get CSP handle
@@ -323,7 +329,7 @@ namespace SignService.Unix.Utils
 
 			if (!bResult || phProv == IntPtr.Zero)
 			{
-				throw new Exception($"Ошибка при попытке получить дескриптор CSP.");
+				throw new Exception($"Ошибка при попытке получить дескриптор CSP. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 
 			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
@@ -331,7 +337,7 @@ namespace SignService.Unix.Utils
 			// Вводим пароль
 			if (!SignServiceUtils.EnterContainerPassword(phProv, keyContainerPassword))
 			{
-				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 
 			return phProv;

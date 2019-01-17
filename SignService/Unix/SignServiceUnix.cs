@@ -73,19 +73,19 @@ namespace SignService.Unix
 			IntPtr handleCert = IntPtr.Zero;
 
 			// Формируем параметр для метода поиска
-			CApiExtConst.CRYPT_HASH_BLOB hashb = new CApiExtConst.CRYPT_HASH_BLOB();
+			CRYPT_HASH_BLOB hashb = new CRYPT_HASH_BLOB();
 
 			try
 			{
 				log.LogDebug($"Пытаемся открыть 'MY' хранилище сертификатов для Текущего пользователя.");
 
 				// Открываем хранилище сертификатов
-				handleSysStore = CApiExtUnix.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "MY");
+				handleSysStore = CApiExtUnix.CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CURRENT_USER, "MY");
 
 				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
 				{
 					log.LogError("Не удалось открыть хранилище 'MY' для текущего пользователя.");
-					throw new CryptographicException("Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя.");
+					throw new CryptographicException($"Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя.Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				log.LogDebug($"Личное хранилище сертификатов для Текущего пользователя успешно открыто.");
@@ -107,19 +107,19 @@ namespace SignService.Unix
 				{
 					log.LogError($"Ошибка при попытке разместить значение Thumbprint в неуправляемой памяти. {ex.Message}.");
 					Marshal.FreeHGlobal(hashb.pbData);
-					throw new CryptographicException($"Ошибка при попытке разместить значение Thumbprint в неуправляемой памяти. {ex.Message}.");
+					throw new CryptographicException($"Ошибка при попытке разместить значение Thumbprint в неуправляемой памяти. {ex.Message}. Код ошибки: {CApiExtUnix.GetLastError()}");
 				}
 
 				log.LogDebug("Бинарное значение Thumbprint успешно размещено в неуправляемой памяти.");
 				log.LogDebug("Пытаемся найти сертификат по Thumbprint данным в неуправляемой памяти.");
 
 				// Ищем сертификат в хранилище
-				handleCert = CApiExtUnix.CertFindCertificateInStore(handleSysStore, CApiExtConst.PKCS_7_OR_X509_ASN_ENCODING, 0, CApiExtConst.CERT_FIND_SHA1_HASH, ref hashb, IntPtr.Zero);
+				handleCert = CApiExtUnix.CertFindCertificateInStore(handleSysStore, PKCS_7_OR_X509_ASN_ENCODING, 0, CERT_FIND_SHA1_HASH, ref hashb, IntPtr.Zero);
 
 				if (handleCert == IntPtr.Zero || handleCert == null)
 				{
 					log.LogError("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
-					throw new CryptographicException("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
+					throw new CryptographicException($"Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.Код ошибки: {CApiExtUnix.GetLastError()}");
 				}
 
 				return handleCert;
@@ -194,7 +194,7 @@ namespace SignService.Unix
 
 				if (!result)
 				{
-					log.LogError($"Метод проверки подписи CryptVerifyDetachedMessageSignature вернул ошибку. Статус код ошибки: {Marshal.GetLastWin32Error()}.");
+					log.LogError($"Метод проверки подписи CryptVerifyDetachedMessageSignature вернул ошибку. Код ошибки: {CApiExtUnix.GetLastError()}.");
 					return result;
 				}
 
@@ -322,7 +322,7 @@ namespace SignService.Unix
 
 			if (hass == IntPtr.Zero)
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить OID алгоритма хэширования. Код ошибки: {CApiExtUnix.GetLastError()}.");
 			}
 
 			return hassInfo;
@@ -341,12 +341,12 @@ namespace SignService.Unix
 			try
 			{
 				// Открываем хранилище сертификатов
-				handleSysStore = CApiExtUnix.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "TrustedPublisher");
+				handleSysStore = CApiExtUnix.CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CURRENT_USER, "TrustedPublisher");
 
 				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
 				{
 					log.LogError("Не удалось открыть хранилище Доверенных издателей для текущего пользователя. Handler == 0.");
-					throw new CryptographicException("Ошибка, не удалось открыть хранилище Доверенных издателей для текущего пользователя.");
+					throw new CryptographicException($"Ошибка, не удалось открыть хранилище Доверенных издателей для текущего пользователя. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				IntPtr currentCertContext = CApiExtUnix.CertEnumCertificatesInStore(handleSysStore, IntPtr.Zero);
@@ -440,21 +440,21 @@ namespace SignService.Unix
 
 				// Обращаемся к csp с установкой связи с контейнером и установкой пароля, 
 				// т.к в csp установлен флаг кэширования при вызове метода CryptSignMessage будет использован csp с установленным паролем
-				uint keySpec = CApiExtConst.AT_SIGNATURE;
+				uint keySpec = AT_SIGNATURE;
 				cspHandle = UnixExtUtil.GetHandler(hCert, out keySpec, password);
 
 				// Подписываем данные
 				// new uint[1] { (uint)data.Length } - Массив размеров в байтах буферов содержимого, на которые указывает rgpbToBeSigned
 				if (!CApiExtUnix.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при попытке подписать данные. Не удалось вычислить размер буфера для подписи.");
+					throw new CryptographicException($"Ошибка при попытке подписать данные. Не удалось вычислить размер буфера для подписи. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				signArray = new byte[signArrayLength];
 
 				if (!CApiExtUnix.CryptSignMessage(ref pParams, detached, cToBeSigned, new IntPtr[1] { rgpbToBeSigned }, new uint[1] { (uint)data.Length }, signArray, ref signArrayLength))
 				{
-					throw new CryptographicException("Ошибка при попытке подписать данные. Не удалось вычислить подпись.");
+					throw new CryptographicException($"Ошибка при попытке подписать данные. Не удалось вычислить подпись. Код ошибки: {CApiExtUnix.GetLastError()}.");
 				}
 
 				return signArray;

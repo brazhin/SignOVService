@@ -21,6 +21,20 @@ namespace SignService.Unix.Api
 		}
 
 		/// <summary>
+		/// Метод получения кода ошибки под Linux
+		/// </summary>
+		/// <returns></returns>
+		internal static int GetLastError()
+		{
+			if (SignServiceProvider.Csp == CspType.CryptoPro)
+				return CApiExtUnixCryptoPro.GetLastError();
+			else if (SignServiceProvider.Csp == CspType.VipNet)
+				return CApiExtUnixVipNet.GetLastError();
+			else
+				throw new Exception($"GetLastError. Указан неподдерживаемый тип криптопровайдера {SignServiceProvider.Csp}.");
+		}
+
+		/// <summary>
 		/// Функция установки параметров криптопровайдера
 		/// </summary>
 		/// <param name="prov"></param>
