@@ -50,7 +50,7 @@ namespace SignService.Win
 
 			if (hass == IntPtr.Zero)
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить OID алгоритма хэширования. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			return hassInfo;
@@ -281,19 +281,19 @@ namespace SignService.Win
 			IntPtr handleCert = IntPtr.Zero;
 
 			// Формируем параметр для метода поиска
-			CApiExtConst.CRYPT_HASH_BLOB hashb = new CApiExtConst.CRYPT_HASH_BLOB();
+			CRYPT_HASH_BLOB hashb = new CRYPT_HASH_BLOB();
 
 			try
 			{
 				log.LogDebug($"Пытаемся открыть 'MY' хранилище сертификатов для Текущего пользователя.");
 
 				// Открываем хранилище сертификатов
-				handleSysStore = CApiExtWin.CertOpenStore(CApiExtConst.CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CApiExtConst.CURRENT_USER, "MY");
+				handleSysStore = CApiExtWin.CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, IntPtr.Zero, CURRENT_USER, "MY");
 
 				if (handleSysStore == IntPtr.Zero || handleSysStore == null)
 				{
 					log.LogError("Не удалось открыть хранилище 'MY' для текущего пользователя.");
-					throw new CryptographicException("Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя.");
+					throw new CryptographicException($"Ошибка, не удалось открыть хранилище 'MY' для текущего пользователя. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
 
 				log.LogDebug($"Личное хранилище сертификатов для Текущего пользователя успешно открыто.");
@@ -322,12 +322,12 @@ namespace SignService.Win
 				log.LogDebug("Пытаемся найти сертификат по Thumbprint данным в неуправляемой памяти.");
 
 				// Ищем сертификат в хранилище
-				handleCert = CApiExtWin.CertFindCertificateInStore(handleSysStore, CApiExtConst.PKCS_7_OR_X509_ASN_ENCODING, 0, CApiExtConst.CERT_FIND_SHA1_HASH, ref hashb, IntPtr.Zero);
+				handleCert = CApiExtWin.CertFindCertificateInStore(handleSysStore, PKCS_7_OR_X509_ASN_ENCODING, 0, CERT_FIND_SHA1_HASH, ref hashb, IntPtr.Zero);
 
 				if (handleCert == IntPtr.Zero || handleCert == null)
 				{
 					log.LogError("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
-					throw new CryptographicException("Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя.");
+					throw new CryptographicException($"Ошибка при получении дескриптора сертификата из хранилища 'MY', для текущего пользователя. {Marshal.GetLastWin32Error()}.");
 				}
 
 				return handleCert;
@@ -349,12 +349,12 @@ namespace SignService.Win
 		internal static byte[] Sign(byte[] data, IntPtr hCert, string password)
 		{
 			// Структура содержит информацию для подписания сообщений с использованием указанного контекста сертификата подписи
-			CApiExtConst.CRYPT_SIGN_MESSAGE_PARA pParams = new CApiExtConst.CRYPT_SIGN_MESSAGE_PARA
+			CRYPT_SIGN_MESSAGE_PARA pParams = new CRYPT_SIGN_MESSAGE_PARA
 			{
 				// Размер этой структуры в байтах
-				cbSize = (uint)Marshal.SizeOf(typeof(CApiExtConst.CRYPT_SIGN_MESSAGE_PARA)),
+				cbSize = (uint)Marshal.SizeOf(typeof(CRYPT_SIGN_MESSAGE_PARA)),
 				// Используемый тип кодирования
-				dwMsgEncodingType = CApiExtConst.PKCS_7_OR_X509_ASN_ENCODING,
+				dwMsgEncodingType = PKCS_7_OR_X509_ASN_ENCODING,
 				// Указатель на CERT_CONTEXT, который будет использоваться при подписании. 
 				// Для того чтобы контекст предоставил доступ к закрытому сигнатурному ключу,
 				// необходимо установить свойство CERT_KEY_PROV_INFO_PROP_ID или CERT_KEY_CONTEXT_PROP_ID
@@ -368,8 +368,8 @@ namespace SignService.Win
 				cMsgCert = 1
 			};
 
-			CApiExtConst.CERT_CONTEXT contextCert = Marshal.PtrToStructure<CApiExtConst.CERT_CONTEXT>(hCert);
-			CApiExtConst.CERT_INFO certInfo = Marshal.PtrToStructure<CApiExtConst.CERT_INFO>(contextCert.pCertInfo);
+			CERT_CONTEXT contextCert = Marshal.PtrToStructure<CERT_CONTEXT>(hCert);
+			CERT_INFO certInfo = Marshal.PtrToStructure<CERT_INFO>(contextCert.pCertInfo);
 
 			var signatureAlg = SignServiceUtils.GetSignatureAlg(certInfo.SubjectPublicKeyInfo.Algorithm.pszObjId);
 			var cryptOidInfo = GetHashAlg(signatureAlg);
@@ -409,7 +409,7 @@ namespace SignService.Win
 
 				// Обращаемся к csp с установкой связи с контейнером и установкой пароля, 
 				// т.к в csp установлен флаг кэширования при вызове метода CryptSignMessage будет использован csp с установленным паролем
-				uint keySpec = CApiExtConst.AT_SIGNATURE;
+				uint keySpec = AT_SIGNATURE;
 				cspHandle = Win32ExtUtil.GetHandler(hCert, out keySpec, password);
 
 				// Подписываем данные

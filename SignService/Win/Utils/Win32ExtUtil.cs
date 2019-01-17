@@ -45,13 +45,15 @@ namespace SignService.Win.Utils
 			uint num = 0;
 			if (!CApiExtWin.CryptGetHashParam(hHash, 2, null, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке вычислить размер буфера для данных, " +
+					$"управляющих операциями объекта функции хэширования. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			byte[] numArray = new byte[num];
+
 			if (!CApiExtWin.CryptGetHashParam(hHash, 2, numArray, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить данные, управляющие операциями объекта функции хэширования. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			return numArray;
@@ -69,7 +71,7 @@ namespace SignService.Win.Utils
 			bool bResult = false;
 			IntPtr phProv = IntPtr.Zero;
 
-			keySpec = CApiExtConst.AT_SIGNATURE;
+			keySpec = AT_SIGNATURE;
 			bool isNeedCleenup = true;
 
 			// Get CSP handle
@@ -84,7 +86,7 @@ namespace SignService.Win.Utils
 
 			if (!bResult)
 			{
-				throw new Exception($"Ошибка при попытке получить дескриптор CSP. {Marshal.GetLastWin32Error()}");
+				throw new Exception($"Ошибка при попытке получить дескриптор CSP. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			string keyContainerPassword = string.IsNullOrEmpty(password) ? "" : password;
@@ -92,7 +94,7 @@ namespace SignService.Win.Utils
 			// Вводим пароль
 			if (!SignServiceUtils.EnterContainerPassword(phProv, keyContainerPassword))
 			{
-				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей.");
+				throw new Exception($"Ошибка при попытке установить значение пароля для контейнера ключей. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			return phProv;
@@ -115,14 +117,14 @@ namespace SignService.Win.Utils
 
 				if (!CApiExtWin.CryptHashData(hHash, temp, (uint)cbSize, 0))
 				{
-					throw new CryptographicException(Marshal.GetLastWin32Error());
+					throw new CryptographicException($"Ошибка при попытке заполнить хэш объект данными. Код ошибки: {Marshal.GetLastWin32Error()}.");
 				}
 
 				temp = null;
 			}
 			catch (Exception ex)
 			{
-				throw new Exception("Ошибка в методе HashData. " + ex.Message);
+				throw new Exception($"Ошибка при попытке заполнить хэш объект данными. {ex.Message}.");
 			}
 		}
 
@@ -146,14 +148,14 @@ namespace SignService.Win.Utils
 
 					if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 					{
-						throw new CryptographicException(Marshal.GetLastWin32Error());
+						throw new CryptographicException($"Не удалось вычислить размер буфера для подписи хэш. Код ошибки: {Marshal.GetLastWin32Error()}.");
 					}
 
 					signArray = new byte[signArraySize];
 
 					if (!CApiExtWin.CryptSignHash(safeHashHandleCP, (uint)keyNumber, null, (uint)dwFlags, signArray, ref signArraySize))
 					{
-						throw new CryptographicException(Marshal.GetLastWin32Error());
+						throw new CryptographicException($"Не удалось вычислить подпись хэш. Код ошибки: {Marshal.GetLastWin32Error()}.");
 					}
 
 					return signArray;
@@ -250,7 +252,7 @@ namespace SignService.Win.Utils
 		{
 			if (!CApiExtWin.CryptCreateHash(hProv, (uint)algid, SafeKeyHandleCP.InvalidHandle, (uint)0, ref hHash))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при создании дескриптора объекта функции хеширования. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 		}
 
@@ -281,7 +283,7 @@ namespace SignService.Win.Utils
 		[SecurityCritical]
 		internal static void AcquireCSP(CspParameters param, ref SafeProvHandleCP hProv)
 		{
-			uint num = (uint)CRYPT_VERIFYCONTEXT;// uint.MaxValue; // CRYPT_DEFAULT_CONTAINER_OPTIONAL
+			uint num = (uint)CRYPT_VERIFYCONTEXT;
 
 			if ((param.Flags & CspProviderFlags.UseMachineKeyStore) != CspProviderFlags.NoFlags)
 			{
@@ -290,7 +292,7 @@ namespace SignService.Win.Utils
 
 			if (!CApiExtWin.CryptAcquireContext(ref hProv, param.KeyContainerName, param.ProviderName, (uint)param.ProviderType, num))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить дескриптор критопровайдера. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 		}
 
@@ -312,17 +314,18 @@ namespace SignService.Win.Utils
 
 			if (!CApiExtWin.CryptGetHashParam(invalidHandle, 2, null, ref num, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при попытке получить данные, управляющие операциями объекта функции хеширования. Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			if ((ulong)((int)rgbHash.Length) != (ulong)num)
 			{
-				throw new CryptographicException(-2146893822);
+				throw new CryptographicException($"Ошибка при получении хэш по заданному алгоритму. Код ошибки: {-2146893822}.");
 			}
 
 			if (!CApiExtWin.CryptSetHashParam(invalidHandle, 2, rgbHash, 0))
 			{
-				throw new CryptographicException(Marshal.GetLastWin32Error());
+				throw new CryptographicException($"Ошибка при установке начального содержимого хэша и выборе особенных алгоритмов хеширования. " +
+					$"Код ошибки: {Marshal.GetLastWin32Error()}.");
 			}
 
 			return invalidHandle;
