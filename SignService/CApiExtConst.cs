@@ -48,8 +48,6 @@ namespace SignService
 			internal IntPtr rgUnauthAttr;
 			internal uint dwFlags;
 			internal uint dwInnerContentType;
-			internal IntPtr HashEncryptionAlgorithm;
-			internal IntPtr pvHashEncryptionAuxInfo;
 		}
 
 		/// <summary>
